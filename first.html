@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>北京轨道交通路网列车衔接模型</title>
+		<link rel="stylesheet" href="resources/blueprint/screen.css" type="text/css">
+		<!--[if lt IE 8]><link rel="stylesheet" href="resources/blueprint/ie.css" type="text/css"><![endif]-->
+		<style type="text/css">
+body { overflow:hidden; }
+.menu { padding:15px 10px; margin:5px 0; background-color:#36F; }
+.menu a { color:#FFF; font-weight:bold; }
+.radius-border { -moz-border-radius:4px; -webkit-border-radius:4px; border:1px solid #aaa; }
+.query-box-title { -moz-border-radius-topleft: 4px; -webkit-border-top-left-radius: 4px; -moz-border-radius-topright: 4px; -webkit-border-top-right-radius: 4px;
+	background:-moz-linear-gradient(top, #FFF, #B3DCFD); background:-webkit-linear-gradient(top, #FFF, #B3DCFD); padding:10px 20px; font-weight:bold; }
+.query-box-body { height:240px; padding:10px; position:relative; }
+#stations { width:160px; margin-left:40px; }
+.query-box-body .buttons { position:absolute; bottom:0px; padding-left:100px; }
+.query-box-body button { -moz-border-radius:6px; -webkit-border-radius:6px; border:1px solid #68ACF0; background-color:#D4EAFF;
+	padding:8px 16px; margin:0 10px; font-size:16px; font-weight:bold; }
+.overview { overflow:hidden; position:relative; -moz-border-radius:4px; -webkit-border-radius:4px; border:1px solid #aaa; }
+.overview button { -moz-border-radius:10px; -webkit-border-radius:10px; border:1px solid #6699CC; background-color:#6699CC;
+	position:absolute; width:30px; height:30px; font-size:18px; font-weight:bold; color:#FFF; }
+.overview img { position:absolute; top:0; left:0; }
+		</style>
+		<script type="text/javascript" src="resources/jquery-1.7.1.min.js"></script>
+		<script type="text/javascript">
+$(function() {
+	// ---------- 查询输入框相关 ----------------
+	// 获取所有换乘站点名称
+	$.post("service/getAllTransferStations.json", function(result) {
+		if(!result) return;
+		var stations = $("#stations");
+		$.each(result, function() {
+			$("<option/>").val(this.stationId).text(this.stationName).appendTo(stations);
+		});
+	}, "json");
+});
+
+$(function() {
+	// ---------- 全局地图相关 ----------------
+	// 调整地图大小，缩放适合屏幕
+	var defHeight = $(window).height() - 148;
+	$(".overview").height(defHeight);
+	var defWidth = 870;
+	var img = $(".overview img").width(defWidth);
+	var WIDTH = 2082, HEIGHT = 1921;
+	// 缩放按钮
+	$("#zoom-in-btn").click(function() {
+		var width = img.width() * 4 / 3 > WIDTH ? WIDTH - img.width() : img.width() / 3;
+		var top = (-img.css("top").substr(0, img.css("top").length - 2) + defHeight / 2) * width / img.width();
+		var left = (-img.css("left").substr(0, img.css("left").length - 2) + defWidth / 2) * width / img.width();
+		img.stop(true).animate({ width: "+=" + width, top: "-=" + top, left: "-=" + left });
+	});
+	$("#zoom-out-btn").click(function() {
+		var width = img.width() * 2 / 3 < defWidth ? img.width() - defWidth : img.width() / 3;
+		var top = (-img.css("top").substr(0, img.css("top").length - 2) + defHeight / 2) * width / img.width();
+		var left = (-img.css("left").substr(0, img.css("left").length - 2) + defWidth / 2) * width / img.width();
+		img.stop(true).animate({ width: "-=" + width, top: "+=" + top, left: "+=" + left });
+	});
+	// 移动按钮
+	$("#move-north-btn").click(function() {
+		var top = +img.css("top").substr(0, img.css("top").length - 2);
+		img.stop(true).animate({ top: "+=" + (top > -300 ? -top : 300) });
+	});
+	$("#move-south-btn").click(function() {
+		var top = +img.css("top").substr(0, img.css("top").length - 2);
+		img.stop(true).animate({ top: "-=" + (top + img.height() - defHeight < 300 ? top + img.height() - defHeight : 300) });
+	});
+	$("#move-west-btn").click(function() {
+		var left = +img.css("left").substr(0, img.css("left").length - 2);
+		img.stop(true).animate({ left: "+=" + (left > -300 ? -left : 300) });
+	});
+	$("#move-east-btn").click(function() {
+		var x = 300;
+		var left = +img.css("left").substr(0, img.css("left").length - 2);
+		img.stop(true).animate({ left: "-=" + (left + img.width() - defWidth < 300 ? left + img.width() - defWidth : 300) });
+	});
+});
+		</script>
+	</head>
+	<body>
+		<div class="container">
+			<hr class="space"/><h1 class="quiet">北京轨道交通路网列车衔接模型</h1><hr class="bottom"/>
+			<h4 class="span-3 colborder menu"><a href="#">首班车衔接信息</a></h4>
+			<h4 class="span-3 colborder menu"><a href="#">末班车衔接信息</a></h4>
+			<h4 class="span-4 colborder menu"><a href="#">常规时间衔接信息</a></h4>
+			<h4 class="span-4 colborder menu"><a href="#">路径出行信息查询</a></h4>
+			<h4 class="span-3 colborder menu"><a href="#">换乘站服务水平</a></h4>
+			<h4 class="span-3 colborder menu"><a href="#">列车行车间隔</a></h4>
+			<h4 class="span-8 last menu">&nbsp;</h4><hr/>
+			<div class="span-8">
+				<div class="radius-border">
+					<h4 class="query-box-title">首班车换乘站查询</h4>
+					<div class="query-box-body">
+						<p><label>选择换乘站：</label><select id="stations"><option class="default" value="0">请选择</option></select></p>
+						<p class="buttons"><button id="query-btn">检索</button><button id="reset-btn">重置</button></p>
+					</div>
+				</div>
+			</div>
+			<div class="span-22 last">
+				<div class="overview">
+					<img src="resources/images/overview.png" />
+					<button id="zoom-in-btn" style="top:10px; left:35px;">+</button>
+					<button id="move-north-btn" style="top:52px; left:35px;">↑</button>
+					<button id="move-south-btn" style="top:116px; left:35px;">↓</button>
+					<button id="move-west-btn" style="top:84px; left:10px;">←</button>
+					<button id="move-east-btn" style="top:84px; left:60px;">→</button>
+					<button id="zoom-out-btn" style="top:158px; left:35px;">-</button>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

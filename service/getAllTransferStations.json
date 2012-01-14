@@ -1,0 +1,18 @@
+[
+    {
+        "stationId": 186,
+        "stationName": "西单"
+    },
+    {
+        "stationId": 187,
+        "stationName": "苹果园"
+    },
+    {
+        "stationId": 188,
+        "stationName": "古城路"
+    },
+	{
+        "stationId": 189,
+        "stationName": "八宝山"
+    }
+]
