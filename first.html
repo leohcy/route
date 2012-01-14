@@ -24,6 +24,7 @@
 .overview img { position:absolute; top:0; left:0; }
 .station-view { position:relative; }
 .station-view h2 { position:absolute; top:165px; left:195px; color:#FFF; }
+.station-view h3 { position:absolute; color:#FFF; }
 		</style>
 		<script type="text/javascript" src="resources/jquery-1.7.1.min.js"></script>
 		<script type="text/javascript" src="resources/raphael.js"></script>
@@ -37,6 +38,18 @@ $(function() {
 		$.each(result, function() {
 			$("<option/>").val(this.stationId).text(this.stationName).appendTo(stations);
 		});
+	}, "json");
+	var _linesDirInStation = {};
+	// 获取换乘点，线路方向（东西向/南北向）
+	$.post("service/getAllLinesDirectionInStation.json", function(result) {
+		if(!result) return;
+		_linesDirInStation = result;
+	}, "json");
+	var _linesColor = {};
+	// 获取线路代表色
+	$.post("service/getAllLinesColor.json", function(result) {
+		if(!result) return;
+		_linesColor = result;
 	}, "json");
 	var _availableRoutes = {};
 	// 选择一个车站
@@ -96,9 +109,17 @@ $(function() {
 		}
 		$.post("service/findFirstTransferSolution.json", {stationId: $("#stations").val(), routeIds: routes.join(",")}, function(result) {
 			if(!result) return;
-			enterStation(true);
+			var horizontalFirst = _linesDirInStation[$("#stations").val()][$("#lines-from").val()] == "WE";
+			var fromLineName = $("#lines-from [value="+$("#lines-from").val()+"]").text();
+			var fromLineColor = _linesColor[$("#lines-from").val()];
+			var toLineName = $("#lines-to [value="+$("#lines-to").val()+"]").text();
+			var toLineColor = _linesColor[$("#lines-to").val()];
+			if(horizontalFirst)
+				enterStation(true, fromLineName, fromLineColor, toLineName, toLineColor);
+			else
+				enterStation(false, toLineName, toLineColor, fromLineName, fromLineColor);
 			$(".overview").hide();
-			$(".station-view").show().find("h2").text($("#stations > :selected").text());
+			$(".station-view").show().find("h2").text($("#stations :selected").text());
 		}, "json");
 		// 重置动作
 		$("#reset-btn").click(function() {
@@ -183,8 +204,14 @@ $(function() {
 	lines.push(paper.rect(260, 200, WIDTH-260, 20).attr({ stroke: "none" }));
 	lines.push(paper.rect(240, 220, 20, HEIGHT-220).attr({ stroke: "none" }));
 	paper.circle(230, 190, 50).attr({ fill: "#C33B3D", stroke: "none" });
+	var horizontalColor = paper.rect(WIDTH-130, 110, 120, 40, 10);
+	var verticalColor = paper.rect(70, HEIGHT-50, 120, 40, 10);
 	// 进入车站，开始动画
-	window.enterStation = function(horizontalFirst) {
+	window.enterStation = function(horizontalFirst, horizontalLineName, horizontalLineColor, verticalLineName, verticalLineColor) {
+		$(".station-view h3:first").text(horizontalLineName).css({ top: 120, left: WIDTH-100 });
+		$(".station-view h3:last").text(verticalLineName).css({ top: HEIGHT-40, left: 100 });
+		horizontalColor.attr({ fill: horizontalLineColor });
+		verticalColor.attr({ fill: verticalLineColor });
 		lines[0].stop().attr(horizontalFirst ? { gra_e: 0 } : { gra_w: 0 });
 		lines[1].stop().attr(horizontalFirst ? { gra_n: 0 } : { gra_s: 0 });
 		lines[2].stop().attr(horizontalFirst ? { gra_e: 0 } : { gra_w: 0 });
@@ -307,7 +334,7 @@ $(function() {
 				</div>
 			</div>
 			<div class="span-22 last">
-				<div class="overview">
+				<div class="overview" style="display:none">
 					<img src="resources/images/overview.png" />
 					<button id="zoom-in-btn" style="top:80px; left:35px;">+</button>
 					<button id="move-north-btn" style="top:122px; left:35px;">↑</button>
@@ -316,8 +343,10 @@ $(function() {
 					<button id="move-east-btn" style="top:154px; left:60px;">→</button>
 					<button id="zoom-out-btn" style="top:228px; left:35px;">-</button>
 				</div>
-				<div class="station-view" style="display:none">
+				<div class="station-view">
 					<h2>&nbsp;</h2>
+					<h3>&nbsp;</h3>
+					<h3>&nbsp;</h3>
 					<div style="position:absolute; bottom:0px; right:0px; background-color:red; width:50px; height:50px;">&nbsp;</div>
 				</div>
 			</div>
