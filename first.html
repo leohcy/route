@@ -6,7 +6,6 @@
 		<link rel="stylesheet" href="resources/blueprint/screen.css" type="text/css">
 		<!--[if lt IE 8]><link rel="stylesheet" href="resources/blueprint/ie.css" type="text/css"><![endif]-->
 		<style type="text/css">
-body { overflow:hidden; }
 .menu { padding:15px 10px; margin:5px 0; background-color:#36F; }
 .menu a { color:#FFF; font-weight:bold; }
 .radius-border { -moz-border-radius:4px; -webkit-border-radius:4px; border:1px solid #aaa; }
@@ -23,8 +22,11 @@ body { overflow:hidden; }
 .overview button { -moz-border-radius:10px; -webkit-border-radius:10px; border:1px solid #6699CC; background-color:#6699CC;
 	position:absolute; width:30px; height:30px; font-size:18px; font-weight:bold; color:#FFF; cursor:pointer; }
 .overview img { position:absolute; top:0; left:0; }
+.station-view { position:relative; }
+.station-view h2 { position:absolute; top:165px; left:195px; color:#FFF; }
 		</style>
 		<script type="text/javascript" src="resources/jquery-1.7.1.min.js"></script>
+		<script type="text/javascript" src="resources/raphael.js"></script>
 		<script type="text/javascript">
 $(function() {
 	// ---------- 查询输入框相关 ----------------
@@ -94,9 +96,9 @@ $(function() {
 		}
 		$.post("service/findFirstTransferSolution.json", {stationId: $("#stations").val(), routeIds: routes.join(",")}, function(result) {
 			if(!result) return;
-			
+			enterStation(true);
 			$(".overview").hide();
-			$(".station-view").show();
+			$(".station-view").show().find("h2").text($("#stations > :selected").text());
 		}, "json");
 		// 重置动作
 		$("#reset-btn").click(function() {
@@ -151,7 +153,127 @@ $(function() {
 });
 
 $(function() {
-
+	// 车站地图相关
+	// 初始化相关元素
+	var WIDTH = 870, HEIGHT = $(window).height() - 168, INTERVAL = 5;
+	var paper = Raphael($(".station-view")[0], WIDTH, HEIGHT);
+	var gradient = function(dir) {
+		return function(num) {
+			if(num == 0 || num == 100)
+				return { fill: "#3B6188" };
+			if(num < 5)
+				return { fill: dir+"-#E9DF72-#3B6188:"+(num+5)+"-#3B6188" };
+			else if(num > 95)
+				return { fill: dir+"-#3B6188-#3B6188:"+(num-5)+"-#E9DF72" };
+			else
+				return { fill: dir+"-#3B6188-#3B6188:"+(num-5)+"-#E9DF72:"+num+"-#3B6188:"+(num+5)+"-#3B6188" };
+		};
+	};
+	paper.customAttributes.gra_e = gradient(0);
+	paper.customAttributes.gra_n = gradient(90);
+	paper.customAttributes.gra_w = gradient(180);
+	paper.customAttributes.gra_s = gradient(270);
+	var lines = [];
+	lines.push(paper.rect(0, 160, 200, 20).attr({ stroke: "none" }));
+	lines.push(paper.rect(200, 0, 20, 160).attr({ stroke: "none" }));
+	lines.push(paper.rect(0, 200, 200, 20).attr({ stroke: "none" }));
+	lines.push(paper.rect(200, 220, 20, HEIGHT-220).attr({ stroke: "none" }));
+	lines.push(paper.rect(260, 160, WIDTH-260, 20).attr({ stroke: "none" }));
+	lines.push(paper.rect(240, 0, 20, 160).attr({ stroke: "none" }));
+	lines.push(paper.rect(260, 200, WIDTH-260, 20).attr({ stroke: "none" }));
+	lines.push(paper.rect(240, 220, 20, HEIGHT-220).attr({ stroke: "none" }));
+	paper.circle(230, 190, 50).attr({ fill: "#C33B3D", stroke: "none" });
+	// 进入车站，开始动画
+	window.enterStation = function(horizontalFirst) {
+		lines[0].stop().attr(horizontalFirst ? { gra_e: 0 } : { gra_w: 0 });
+		lines[1].stop().attr(horizontalFirst ? { gra_n: 0 } : { gra_s: 0 });
+		lines[2].stop().attr(horizontalFirst ? { gra_e: 0 } : { gra_w: 0 });
+		lines[3].stop().attr(horizontalFirst ? { gra_s: 0 } : { gra_n: 0 });
+		lines[4].stop().attr(horizontalFirst ? { gra_w: 0 } : { gra_e: 0 });
+		lines[5].stop().attr(horizontalFirst ? { gra_n: 0 } : { gra_s: 0 });
+		lines[6].stop().attr(horizontalFirst ? { gra_w: 0 } : { gra_e: 0 });
+		lines[7].stop().attr(horizontalFirst ? { gra_s: 0 } : { gra_n: 0 });
+		(function() {
+			var func = arguments.callee;
+			if(horizontalFirst) {
+				lines[0].animate({ gra_e: 100 }, 200 * INTERVAL, function() {
+					lines[0].attr({ gra_e: 0 });
+					lines[1].animate({ gra_n: 100 }, 160 * INTERVAL, function() {
+						lines[1].attr({ gra_n: 0 });
+						func();
+					});
+				});
+			} else {
+				lines[1].animate({ gra_s: 100 }, 160 * INTERVAL, function() {
+					lines[1].attr({ gra_s: 0 });
+					lines[0].animate({ gra_w: 100 }, 200 * INTERVAL, function() {
+						lines[0].attr({ gra_w: 0 });
+						func();
+					});
+				});
+			}
+		})();
+		(function() {
+			var func = arguments.callee;
+			if(horizontalFirst) {
+				lines[2].animate({ gra_e: 100 }, 200 * INTERVAL, function() {
+					lines[2].attr({ gra_e: 0 });
+					lines[3].animate({ gra_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
+						lines[3].attr({ gra_s: 0 });
+						func();
+					});
+				});
+			} else {
+				lines[3].animate({ gra_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
+					lines[3].attr({ gra_n: 0 });
+					lines[2].animate({ gra_w: 100 }, 200 * INTERVAL, function() {
+						lines[2].attr({ gra_w: 0 });
+						func();
+					});
+				});
+			}
+		})();
+		(function() {
+			var func = arguments.callee;
+			if(horizontalFirst) {
+				lines[4].animate({ gra_w: 100 }, (WIDTH-260) * INTERVAL, function() {
+					lines[4].attr({ gra_w: 0 });
+					lines[5].animate({ gra_n: 100 }, 160 * INTERVAL, function() {
+						lines[5].attr({ gra_n: 0 });
+						func();
+					});
+				});
+			} else {
+				lines[5].animate({ gra_s: 100 }, 160 * INTERVAL, function() {
+					lines[5].attr({ gra_s: 0 });
+					lines[4].animate({ gra_e: 100 }, (WIDTH-260) * INTERVAL, function() {
+						lines[4].attr({ gra_e: 0 });
+						func();
+					});
+				});
+			}
+		})();
+		(function() {
+			var func = arguments.callee;
+			if(horizontalFirst) {
+				lines[6].animate({ gra_w: 100 }, (WIDTH-260) * INTERVAL, function() {
+					lines[6].attr({ gra_w: 0 });
+					lines[7].animate({ gra_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
+						lines[7].attr({ gra_s: 0 });
+						func();
+					});
+				});
+			} else {
+				lines[7].animate({ gra_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
+					lines[7].attr({ gra_n: 0 });
+					lines[6].animate({ gra_e: 100 }, (WIDTH-260) * INTERVAL, function() {
+						lines[6].attr({ gra_e: 0 });
+						func();
+					});
+				});
+			}
+		})();
+	};
 });
 		</script>
 	</head>
@@ -170,12 +292,12 @@ $(function() {
 					<h4 class="query-box-title">首班车换乘站查询</h4>
 					<div class="query-box-body">
 						<p><label>选择换乘站：</label><select id="stations"><option class="default" value="0">请选择</option></select></p>
-						<p class="hide lines">
+						<p class="lines" style="display:none">
 							<label>换出线路：</label><select id="lines-from"></select>&nbsp; 
 							<input type="checkbox" value="2" />上行 &nbsp;
 							<input type="checkbox" value="1" />下行
 						</p>
-						<p class="hide lines">
+						<p class="lines" style="display:none">
 							<label>换入线路：</label><select id="lines-to"></select>&nbsp; 
 							<input type="checkbox" value="2" />上行 &nbsp;
 							<input type="checkbox" value="1" />下行
@@ -185,7 +307,7 @@ $(function() {
 				</div>
 			</div>
 			<div class="span-22 last">
-				<div class="hide overview">
+				<div class="overview">
 					<img src="resources/images/overview.png" />
 					<button id="zoom-in-btn" style="top:80px; left:35px;">+</button>
 					<button id="move-north-btn" style="top:122px; left:35px;">↑</button>
@@ -194,8 +316,9 @@ $(function() {
 					<button id="move-east-btn" style="top:154px; left:60px;">→</button>
 					<button id="zoom-out-btn" style="top:228px; left:35px;">-</button>
 				</div>
-				<div class=" station-view">
-					1
+				<div class="station-view" style="display:none">
+					<h2>&nbsp;</h2>
+					<div style="position:absolute; bottom:0px; right:0px; background-color:red; width:50px; height:50px;">&nbsp;</div>
 				</div>
 			</div>
 		</div>
