@@ -1,0 +1,107 @@
+[
+	{
+        "routeId": 24,
+        "walkTime": 120,
+        "waitTime": 180,
+        "fromTrain": {
+            "trainId": "2116",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        },
+        "toTrain": {
+            "trainId": "2118",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        }
+    },
+    {
+        "routeId": 23,
+        "walkTime": 120,
+        "waitTime": 180,
+        "fromTrain": {
+            "trainId": "2116",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        },
+        "toTrain": {
+            "trainId": "2118",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        }
+    },
+	{
+        "routeId": 25,
+        "walkTime": 120,
+        "waitTime": 180,
+        "fromTrain": {
+            "trainId": "2116",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        },
+        "toTrain": {
+            "trainId": "2118",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        }
+    },
+	{
+        "routeId": 27,
+        "walkTime": 120,
+        "waitTime": 180,
+        "fromTrain": {
+            "trainId": "2116",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        },
+        "toTrain": {
+            "trainId": "2118",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        }
+    },
+	{
+        "routeId": 28,
+        "walkTime": 120,
+        "waitTime": 180,
+        "fromTrain": {
+            "trainId": "2116",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        },
+        "toTrain": {
+            "trainId": "2118",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        }
+    },
+	{
+        "routeId": 29,
+        "walkTime": 120,
+        "waitTime": 180,
+        "fromTrain": {
+            "trainId": "2116",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        },
+        "toTrain": {
+            "trainId": "2118",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        }
+    },
+	{
+        "routeId": 30,
+        "walkTime": 120,
+        "waitTime": 180,
+        "fromTrain": {
+            "trainId": "2116",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        },
+        "toTrain": {
+            "trainId": "2118",
+            "arrivalTime": 1326267161000,
+            "departureTime": 1326267255000
+        }
+    }
+]

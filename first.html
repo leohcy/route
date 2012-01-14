@@ -14,12 +14,14 @@ body { overflow:hidden; }
 	background:-moz-linear-gradient(top, #FFF, #B3DCFD); background:-webkit-linear-gradient(top, #FFF, #B3DCFD); padding:10px 20px; font-weight:bold; }
 .query-box-body { height:240px; padding:10px; position:relative; }
 #stations { width:160px; margin-left:40px; }
+#lines-from { width:100px; margin-left:10px; }
+#lines-to { width:100px; margin-left:10px; }
 .query-box-body .buttons { position:absolute; bottom:0px; padding-left:100px; }
 .query-box-body button { -moz-border-radius:6px; -webkit-border-radius:6px; border:1px solid #68ACF0; background-color:#D4EAFF;
-	padding:8px 16px; margin:0 10px; font-size:16px; font-weight:bold; }
-.overview { overflow:hidden; position:relative; -moz-border-radius:4px; -webkit-border-radius:4px; border:1px solid #aaa; }
+	padding:8px 16px; margin:0 10px; font-size:16px; font-weight:bold; cursor:pointer; }
+.overview { overflow:hidden; position:relative; border:1px solid #aaa; }
 .overview button { -moz-border-radius:10px; -webkit-border-radius:10px; border:1px solid #6699CC; background-color:#6699CC;
-	position:absolute; width:30px; height:30px; font-size:18px; font-weight:bold; color:#FFF; }
+	position:absolute; width:30px; height:30px; font-size:18px; font-weight:bold; color:#FFF; cursor:pointer; }
 .overview img { position:absolute; top:0; left:0; }
 		</style>
 		<script type="text/javascript" src="resources/jquery-1.7.1.min.js"></script>
@@ -34,15 +36,86 @@ $(function() {
 			$("<option/>").val(this.stationId).text(this.stationName).appendTo(stations);
 		});
 	}, "json");
+	var _availableRoutes = {};
+	// 选择一个车站
+	$("#stations").change(function() {
+		if($(this).val() == 0) {
+			_availableRoutes = {};
+			$("#lines-from,#lines-to").closest("p").fadeOut();
+			return;
+		}
+		$.post("service/findRoutesByStation.json", { stationId: $(this).val() }, function(result) {
+			if(!result) return;
+			var fromLines = {}, toLines = {};
+			_availableRoutes = {};
+			$.each(result, function() {
+				fromLines[this.fromLine.lineId] = this.fromLine.lineName;
+				toLines[this.toLine.lineId] = this.toLine.lineName;
+				_availableRoutes[this.routeId] = { fromLine: this.fromLine, toLine: this.toLine };
+			});
+			var from = $("#lines-from").empty();
+			for(var id in fromLines)
+				$("<option/>").val(id).text(fromLines[id]).appendTo(from);
+			var to = $("#lines-to").empty();
+			for(var id in toLines)
+				$("<option/>").val(id).text(toLines[id]).appendTo(to);
+			if(from.val() == to.val())
+				to.children(":first").next().attr("selected", true);
+			$("#lines-from,#lines-to").closest("p").fadeIn().find(":checkbox").attr("checked", true);;
+		}, "json");
+		
+	});
+	// 选择线路
+	$("#lines-from,#lines-to").change(function() {
+		var me = $(this);
+		var she = me.closest("p").siblings(".lines").children("select");
+		if(me.val() == she.val())
+			she.children(":selected").siblings(":first").attr("selected", true);
+	});
+	// 选择方向
+	$("#lines-from ~ :checkbox,#lines-to ~ :checkbox").change(function() {
+		if($(this).attr("checked")) return;
+		$(this).siblings(":checkbox:first").attr("checked", true);
+	});
+	// 检索动作
+	$("#query-btn").click(function() {
+		var from = $("#lines-from").val(), to = $("#lines-to").val();
+		var fromDirs = $("#lines-from ~ :checkbox"), toDirs = $("#lines-to ~ :checkbox");
+		var routes = [];
+		$.each(_availableRoutes, function(routeId) {
+			if(this.fromLine.lineId == from && this.toLine.lineId == to
+					&& fromDirs.filter(":checked[value="+this.fromLine.lineDir+"]").length > 0
+					&& toDirs.filter(":checked[value="+this.toLine.lineDir+"]").length > 0)
+				routes.push(routeId);
+		});
+		if(routes.length == 0) {
+			alert("没有符合条件的换乘路线");
+			return;
+		}
+		$.post("service/findFirstTransferSolution.json", {stationId: $("#stations").val(), routeIds: routes.join(",")}, function(result) {
+			if(!result) return;
+			
+			$(".overview").hide();
+			$(".station-view").show();
+		}, "json");
+		// 重置动作
+		$("#reset-btn").click(function() {
+			$(".overview").show();
+			$(".station-view").hide();
+		});
+	});
 });
 
 $(function() {
 	// ---------- 全局地图相关 ----------------
 	// 调整地图大小，缩放适合屏幕
-	var defHeight = $(window).height() - 148;
+	var defHeight = $(window).height() - 168;
 	$(".overview").height(defHeight);
 	var defWidth = 870;
 	var img = $(".overview img").width(defWidth);
+	img.load(function() {
+		img.css("top", (defHeight - img.height()) / 2);
+	});
 	var WIDTH = 2082, HEIGHT = 1921;
 	// 缩放按钮
 	$("#zoom-in-btn").click(function() {
@@ -76,6 +149,10 @@ $(function() {
 		img.stop(true).animate({ left: "-=" + (left + img.width() - defWidth < 300 ? left + img.width() - defWidth : 300) });
 	});
 });
+
+$(function() {
+
+});
 		</script>
 	</head>
 	<body>
@@ -93,19 +170,32 @@ $(function() {
 					<h4 class="query-box-title">首班车换乘站查询</h4>
 					<div class="query-box-body">
 						<p><label>选择换乘站：</label><select id="stations"><option class="default" value="0">请选择</option></select></p>
+						<p class="hide lines">
+							<label>换出线路：</label><select id="lines-from"></select>&nbsp; 
+							<input type="checkbox" value="2" />上行 &nbsp;
+							<input type="checkbox" value="1" />下行
+						</p>
+						<p class="hide lines">
+							<label>换入线路：</label><select id="lines-to"></select>&nbsp; 
+							<input type="checkbox" value="2" />上行 &nbsp;
+							<input type="checkbox" value="1" />下行
+						</p>
 						<p class="buttons"><button id="query-btn">检索</button><button id="reset-btn">重置</button></p>
 					</div>
 				</div>
 			</div>
 			<div class="span-22 last">
-				<div class="overview">
+				<div class="hide overview">
 					<img src="resources/images/overview.png" />
-					<button id="zoom-in-btn" style="top:10px; left:35px;">+</button>
-					<button id="move-north-btn" style="top:52px; left:35px;">↑</button>
-					<button id="move-south-btn" style="top:116px; left:35px;">↓</button>
-					<button id="move-west-btn" style="top:84px; left:10px;">←</button>
-					<button id="move-east-btn" style="top:84px; left:60px;">→</button>
-					<button id="zoom-out-btn" style="top:158px; left:35px;">-</button>
+					<button id="zoom-in-btn" style="top:80px; left:35px;">+</button>
+					<button id="move-north-btn" style="top:122px; left:35px;">↑</button>
+					<button id="move-south-btn" style="top:186px; left:35px;">↓</button>
+					<button id="move-west-btn" style="top:154px; left:10px;">←</button>
+					<button id="move-east-btn" style="top:154px; left:60px;">→</button>
+					<button id="zoom-out-btn" style="top:228px; left:35px;">-</button>
+				</div>
+				<div class=" station-view">
+					1
 				</div>
 			</div>
 		</div>

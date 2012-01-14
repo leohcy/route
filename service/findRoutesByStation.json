@@ -1,0 +1,106 @@
+[
+    {
+        "routeId": 23,
+        "fromLine": {
+            "lineId": 31,
+            "lineDir": 1,
+            "lineName": "一号线"
+        },
+        "toLine": {
+            "lineId": 32,
+            "lineDir": 1,
+            "lineName": "二号线"
+        }
+    },
+    {
+        "routeId": 24,
+        "fromLine": {
+            "lineId": 31,
+            "lineDir": 1,
+            "lineName": "一号线"
+        },
+        "toLine": {
+            "lineId": 32,
+            "lineDir": 2,
+            "lineName": "二号线"
+        }
+    },
+	{
+        "routeId": 25,
+        "fromLine": {
+            "lineId": 31,
+            "lineDir": 2,
+            "lineName": "一号线"
+        },
+        "toLine": {
+            "lineId": 32,
+            "lineDir": 1,
+            "lineName": "二号线"
+        }
+    },
+	{
+        "routeId": 26,
+        "fromLine": {
+            "lineId": 31,
+            "lineDir": 2,
+            "lineName": "一号线"
+        },
+        "toLine": {
+            "lineId": 32,
+            "lineDir": 2,
+            "lineName": "二号线"
+        }
+    },
+	{
+        "routeId": 27,
+        "fromLine": {
+            "lineId": 32,
+            "lineDir": 1,
+            "lineName": "二号线"
+        },
+        "toLine": {
+            "lineId": 31,
+            "lineDir": 1,
+            "lineName": "一号线"
+        }
+    },
+	{
+        "routeId": 28,
+        "fromLine": {
+            "lineId": 32,
+            "lineDir": 1,
+            "lineName": "二号线"
+        },
+        "toLine": {
+            "lineId": 31,
+            "lineDir": 2,
+            "lineName": "一号线"
+        }
+    },
+	{
+        "routeId": 29,
+        "fromLine": {
+            "lineId": 32,
+            "lineDir": 2,
+            "lineName": "二号线"
+        },
+        "toLine": {
+            "lineId": 31,
+            "lineDir": 1,
+            "lineName": "一号线"
+        }
+    },
+	{
+        "routeId": 30,
+        "fromLine": {
+            "lineId": 32,
+            "lineDir": 2,
+            "lineName": "二号线"
+        },
+        "toLine": {
+            "lineId": 31,
+            "lineDir": 2,
+            "lineName": "一号线"
+        }
+    }
+]
