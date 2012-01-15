@@ -219,8 +219,10 @@ $(function() {
 				enterStation(true, fromLineName, fromLineColor, toLineName, toLineColor);
 			else
 				enterStation(false, toLineName, toLineColor, fromLineName, fromLineColor);
-			$(".overview").hide();
-			$(".station-view").show().find("h2").text(stationName);
+			zoomIntoStation(stationId, function() {
+				$(".overview").hide().find("img").css("opacity", 1);
+				$(".station-view").fadeIn("slow").find("h2").text(stationName);
+			});
 		}, "json");
 	};
 	$("#query-btn").click(function() {
@@ -277,6 +279,17 @@ $(function() {
 		var left = +img.css("left").substr(0, img.css("left").length - 2);
 		img.stop(true).animate({ left: "-=" + (left + img.width() - defWidth < 300 ? left + img.width() - defWidth : 300) });
 	});
+	window.zoomIntoStation = function(stationId, callback) {
+		var x = WIDTH / 2, y = HEIGHT / 2;
+		for(var i = 0; i < _stationsPoint.length; i++) {
+			if(_stationsPoint[i].stationId == stationId) {
+				x = _stationsPoint[i].x;
+				y = _stationsPoint[i].y;
+				break;
+			}
+		}
+		img.stop(true).animate({ width: WIDTH * 3, top: defHeight / 2 - y * 3, left: defWidth / 2 - x * 3, opacity: 0.4 }, 1000, callback);
+	};
 	var _stationsPoint = [];
 	// 获取各站点在地图中的坐标
 	$.post("service/getAllStationsPoint.json", function(result) {
