@@ -1,0 +1,73 @@
+{
+    "lastest": [
+        {
+            "routeId": 23,
+            "walkTime": 120,
+            "waitTime": null,
+            "fromTrain": {
+                "trainId": "2116",
+                "arrivalTime": 1326267161000,
+                "departureTime": 1326267255000
+            },
+            "toTrain": null
+        },
+        {
+            "routeId": 24,
+            "walkTime": 120,
+            "waitTime": null,
+            "fromTrain": {
+                "trainId": "2116",
+                "arrivalTime": 1326267161000,
+                "departureTime": 1326267255000
+            },
+            "toTrain": null
+        },
+        {
+            "routeId": 25,
+            "walkTime": 120,
+            "waitTime": 180,
+            "fromTrain": {
+                "trainId": "2116",
+                "arrivalTime": 1326267161000,
+                "departureTime": 1326267255000
+            },
+            "toTrain": {
+                "trainId": "2118",
+                "arrivalTime": 1326267161000,
+                "departureTime": 1326267255000
+            }
+        }
+    ],
+    "reachable": [
+        {
+            "routeId": 24,
+            "walkTime": 120,
+            "waitTime": 180,
+            "fromTrain": {
+                "trainId": "2116",
+                "arrivalTime": 1326267161000,
+                "departureTime": 1326267255000
+            },
+            "toTrain": {
+                "trainId": "2118",
+                "arrivalTime": 1326267161000,
+                "departureTime": 1326267255000
+            }
+        },
+        {
+            "routeId": 23,
+            "walkTime": 120,
+            "waitTime": 180,
+            "fromTrain": {
+                "trainId": "2116",
+                "arrivalTime": 1326267161000,
+                "departureTime": 1326267255000
+            },
+            "toTrain": {
+                "trainId": "2118",
+                "arrivalTime": 1326267161000,
+                "departureTime": 1326267255000
+            }
+        }
+    ]
+}
