@@ -25,8 +25,7 @@
 .station-view { position:relative; }
 .station-view h2 { position:absolute; top:165px; left:195px; color:#FFF; }
 .station-view h3 { position:absolute; color:#FFF; }
-.station-view table { position:absolute; top:400px; right:0px; width:640px; }
-.station-view table { border-top:1px solid #888; border-left:1px solid #888; }
+.station-view table { position:absolute; top:400px; right:0px; width:620px; border-top:1px solid #888; border-left:1px solid #888; }
 .station-view th, .station-view td { border-bottom:1px solid #888; border-right:1px solid #888; }
 .station-view .tooltip { position:absolute; width:160px; height:100px; padding:5px; background-color:#a4a4a4;
 	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #6fc; }
@@ -160,7 +159,49 @@ $(function() {
 				tbody.append(this[4]);
 			});
 			
-			var horizontalFirst = _linesDirInStation[$("#stations").val()][$("#lines-from").val()] == "WE";
+			var fromDir = _linesDirInStation[$("#stations").val()][from];
+			var toDir = _linesDirInStation[$("#stations").val()][to];
+			var quadrant = [];
+			if(fromDir == "WE" && toDir == "SN")
+				quadrant = [ [2,2], [1,2], [1,1], [2,1] ];
+			else if(fromDir == "NS" && toDir == "EW")
+				quadrant = [ [2,2], [2,1], [1,1], [1,2] ];
+			else if(fromDir == "EW" && toDir == "SN")
+				quadrant = [ [1,2], [2,2], [2,1], [1,1] ];
+			else if(fromDir == "NS" && toDir == "WE")
+				quadrant = [ [2,1], [2,2], [1,2], [1,1] ];
+			else if(fromDir == "EW" && toDir == "NS")
+				quadrant = [ [1,1], [2,1], [2,2], [1,2] ];
+			else if(fromDir == "SN" && toDir == "WE")
+				quadrant = [ [1,1], [1,2], [2,2], [2,1] ];
+			else if(fromDir == "WE" && toDir == "NS")
+				quadrant = [ [2,1], [1,1], [1,2], [2,2] ];
+			else if(fromDir == "SN" && toDir == "EW")
+				quadrant = [ [1,2], [1,1], [2,1], [2,2] ];
+			routes = {};
+			for(var i = 0; i < quadrant.length; i++) {
+				$.each(_availableRoutes, function(routeId) {
+					if(this.fromLine.lineId == from && this.toLine.lineId == to
+							&& this.fromLine.lineDir == quadrant[i][0]
+							&& this.toLine.lineDir == quadrant[i][1])
+						routes[routeId] = i;
+				});
+			}
+			var tooltips = $(".station-view .tooltip").hide();
+			$.each(result, function() {
+				if(typeof routes[this.routeId] == "undefined")
+					return;
+				var tooltip = tooltips.eq(routes[this.routeId]);
+				tooltip.find(".wait-time").text(this.waitTime/60);
+				tooltip.find(".from-train-id").text(this.fromTrain.trainId);
+				tooltip.find(".from-arrival-time").text(formatTime(this.fromTrain.arrivalTime));
+				tooltip.find(".to-train-id").text(this.toTrain.trainId);
+				tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
+				tooltip.find(".walk-time").text(this.walkTime/60);
+				tooltip.show();
+			});
+			
+			var horizontalFirst = fromDir == "WE" || fromDir == "EW";
 			var fromLineName = $("#lines-from [value="+$("#lines-from").val()+"]").text();
 			var fromLineColor = _linesColor[$("#lines-from").val()];
 			var toLineName = $("#lines-to [value="+$("#lines-to").val()+"]").text();
@@ -358,6 +399,11 @@ function formatDate(time) {
 	time = new Date(time);
 	return (time.getFullYear() + "-" + (time.getMonth() + 1) + "-" + time.getDate() + " " + time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds());
 }
+
+function formatTime(time) {
+	time = new Date(time);
+	return (time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds());
+}
 		</script>
 	</head>
 	<body>
@@ -408,11 +454,11 @@ function formatDate(time) {
 							<tr>
 								<th width="120px">换出/换入</th>
 								<th width="90px">首车<br/>行车方向</th>
-								<th width="50px">首车<br/>车次</th>
+								<th width="40px">首车<br/>车次</th>
 								<th width="70px">首车<br/>到达时刻</th>
 								<th width="50px">换乘<br/>时间</th>
 								<th width="90px">换乘车<br/>行车方向</th>
-								<th width="50px">换乘车<br/>车次</th>
+								<th width="40px">换乘车<br/>车次</th>
 								<th width="70px">换乘车<br/>发车时刻</th>
 								<th width="50px">等待<br/>时间</th>
 							</tr>
@@ -420,32 +466,32 @@ function formatDate(time) {
 						<tbody></tbody>
 					</table>
 					<div class="tooltip" style="top:10px; left:10px; display:none;">
-						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">3</span>分钟</h4>
+						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">0</span>分钟</h4>
 						<hr class="bottom" style="margin:5px 0" />
-						首车<span class="from-train-id">14013</span>次(<span class="from-arrival-time">5:35</span>到达)<br/>
-						换乘<span class="to-train-id">11019</span>次(<span class="from-departure-time">5:40</span>发车)<br/>
-						换乘时间：<span class="walk-time">2</span>分钟
+						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
+						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
+						换乘时间：<span class="walk-time">0</span>分钟
 					</div>
 					<div class="tooltip" style="top:10px; left:280px; display:none;">
-						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">3</span>分钟</h4>
+						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">0</span>分钟</h4>
 						<hr class="bottom" style="margin:5px 0" />
-						首车<span class="from-train-id">14013</span>次(<span class="from-arrival-time">5:35</span>到达)<br/>
-						换乘<span class="to-train-id">11019</span>次(<span class="from-departure-time">5:40</span>发车)<br/>
-						换乘时间：<span class="walk-time">2</span>分钟
-					</div>
-					<div class="tooltip" style="top:240px; left:10px; display:none;">
-						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">3</span>分钟</h4>
-						<hr class="bottom" style="margin:5px 0" />
-						首车<span class="from-train-id">14013</span>次(<span class="from-arrival-time">5:35</span>到达)<br/>
-						换乘<span class="to-train-id">11019</span>次(<span class="from-departure-time">5:40</span>发车)<br/>
-						换乘时间：<span class="walk-time">2</span>分钟
+						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
+						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
+						换乘时间：<span class="walk-time">0</span>分钟
 					</div>
 					<div class="tooltip" style="top:240px; left:280px; display:none;">
-						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">3</span>分钟</h4>
+						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">0</span>分钟</h4>
 						<hr class="bottom" style="margin:5px 0" />
-						首车<span class="from-train-id">14013</span>次(<span class="from-arrival-time">5:35</span>到达)<br/>
-						换乘<span class="to-train-id">11019</span>次(<span class="from-departure-time">5:40</span>发车)<br/>
-						换乘时间：<span class="walk-time">2</span>分钟
+						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
+						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
+						换乘时间：<span class="walk-time">0</span>分钟
+					</div>
+					<div class="tooltip" style="top:240px; left:10px; display:none;">
+						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">0</span>分钟</h4>
+						<hr class="bottom" style="margin:5px 0" />
+						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
+						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
+						换乘时间：<span class="walk-time">0</span>分钟
 					</div>
 				</div>
 			</div>
