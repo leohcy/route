@@ -13,8 +13,7 @@
 	background:-moz-linear-gradient(top, #FFF, #B3DCFD); background:-webkit-linear-gradient(top, #FFF, #B3DCFD); padding:10px 20px; font-weight:bold; }
 .query-box-body { height:240px; padding:10px; position:relative; }
 #stations { width:160px; margin-left:40px; }
-#lines-from { width:100px; margin-left:10px; }
-#lines-to { width:100px; margin-left:10px; }
+#lines-from,#lines-to { width:100px; margin-left:10px; }
 .query-box-body .buttons { position:absolute; bottom:0px; padding-left:100px; }
 .query-box-body button { -moz-border-radius:6px; -webkit-border-radius:6px; border:1px solid #68ACF0; background-color:#D4EAFF;
 	padding:8px 16px; margin:0 10px; font-size:16px; font-weight:bold; cursor:pointer; }
@@ -29,6 +28,13 @@
 .station-view th, .station-view td { border-bottom:1px solid #888; border-right:1px solid #888; }
 .station-view .tooltip { position:absolute; width:160px; height:100px; padding:5px; background-color:#a4a4a4;
 	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #6fc; }
+#map-tooltip { position:absolute; width:160px; height:130px; padding:5px; background-color:#fff;
+	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #39f; }
+.close-btn-icon { background-image:url(resources/images/icons.png); background-position:-96px -128px;
+	width:16px; height:16px; right:5px; position:absolute; cursor:pointer; }
+#lines-from-mini,#lines-to-mini { width:70px; }
+.confirm-btn-icon { background-image:url(resources/images/icons.png); background-position:-64px -144px;
+	width:16px; height:16px; position:absolute; bottom:10px; right:10px; cursor:pointer; }
 		</style>
 		<script type="text/javascript" src="resources/jquery-1.7.1.min.js"></script>
 		<script type="text/javascript" src="resources/raphael.js"></script>
@@ -55,15 +61,10 @@ $(function() {
 		if(!result) return;
 		_linesColor = result;
 	}, "json");
-	var _availableRoutes = {};
 	// 选择一个车站
-	$("#stations").change(function() {
-		if($(this).val() == 0) {
-			_availableRoutes = {};
-			$("#lines-from,#lines-to").closest("p").fadeOut();
-			return;
-		}
-		$.post("service/findRoutesByStation.json", { stationId: $(this).val() }, function(result) {
+	var _availableRoutes = {};
+	window.chooseStation = function(stationId, fromLinesSelector, toLinesSelector, callback) {
+		$.post("service/findRoutesByStation.json", { stationId: stationId }, function(result) {
 			if(!result) return;
 			var fromLines = {}, toLines = {};
 			_availableRoutes = {};
@@ -72,17 +73,26 @@ $(function() {
 				toLines[this.toLine.lineId] = this.toLine.lineName;
 				_availableRoutes[this.routeId] = { fromLine: this.fromLine, toLine: this.toLine };
 			});
-			var from = $("#lines-from").empty();
+			var from = $(fromLinesSelector).empty();
 			for(var id in fromLines)
 				$("<option/>").val(id).text(fromLines[id]).appendTo(from);
-			var to = $("#lines-to").empty();
+			var to = $(toLinesSelector).empty();
 			for(var id in toLines)
 				$("<option/>").val(id).text(toLines[id]).appendTo(to);
 			if(from.val() == to.val())
 				to.children(":first").next().attr("selected", true);
-			$("#lines-from,#lines-to").closest("p").fadeIn().find(":checkbox").attr("checked", true);;
+			callback();
 		}, "json");
-		
+	};
+	$("#stations").change(function() {
+		if($(this).val() == 0) {
+			_availableRoutes = {};
+			$("#lines-from,#lines-to").closest("p").fadeOut();
+			return;
+		}
+		chooseStation($(this).val(), "#lines-from", "#lines-to", function() {
+			$("#lines-from,#lines-to").closest("p").fadeIn().find(":checkbox").attr("checked", true);
+		});
 	});
 	// 选择线路
 	$("#lines-from,#lines-to").change(function() {
@@ -97,9 +107,9 @@ $(function() {
 		$(this).siblings(":checkbox:first").attr("checked", true);
 	});
 	// 检索动作
-	$("#query-btn").click(function() {
-		var from = $("#lines-from").val(), to = $("#lines-to").val();
-		var fromDirs = $("#lines-from ~ :checkbox"), toDirs = $("#lines-to ~ :checkbox");
+	window.queryAction = function(stationId, stationName, fromLineSelector, toLineSelector, fromLineDirsSelector, toLineDirsSelector) {
+		var from = $(fromLineSelector).val(), to = $(toLineSelector).val();
+		var fromDirs = $(fromLineDirsSelector), toDirs = $(toLineDirsSelector);
 		var routes = [];
 		$.each(_availableRoutes, function(routeId) {
 			if(this.fromLine.lineId == from && this.toLine.lineId == to
@@ -111,7 +121,7 @@ $(function() {
 			alert("没有符合条件的换乘路线");
 			return;
 		}
-		$.post("service/findFirstTransferSolution.json", {stationId: $("#stations").val(), routeIds: routes.join(",")}, function(result) {
+		$.post("service/findFirstTransferSolution.json", {stationId: stationId, routeIds: routes.join(",")}, function(result) {
 			if(!result) return;
 			var routes = [];
 			$.each(result, function() {
@@ -159,8 +169,8 @@ $(function() {
 				tbody.append(this[4]);
 			});
 			
-			var fromDir = _linesDirInStation[$("#stations").val()][from];
-			var toDir = _linesDirInStation[$("#stations").val()][to];
+			var fromDir = _linesDirInStation[stationId][from];
+			var toDir = _linesDirInStation[stationId][to];
 			var quadrant = [];
 			if(fromDir == "WE" && toDir == "SN")
 				quadrant = [ [2,2], [1,2], [1,1], [2,1] ];
@@ -189,8 +199,7 @@ $(function() {
 			}
 			var tooltips = $(".station-view .tooltip").hide();
 			$.each(result, function() {
-				if(typeof routes[this.routeId] == "undefined")
-					return;
+				if(typeof routes[this.routeId] == "undefined") return;
 				var tooltip = tooltips.eq(routes[this.routeId]);
 				tooltip.find(".wait-time").text(this.waitTime/60);
 				tooltip.find(".from-train-id").text(this.fromTrain.trainId);
@@ -202,20 +211,25 @@ $(function() {
 			});
 			
 			var horizontalFirst = fromDir == "WE" || fromDir == "EW";
-			var fromLineName = $("#lines-from [value="+$("#lines-from").val()+"]").text();
-			var fromLineColor = _linesColor[$("#lines-from").val()];
-			var toLineName = $("#lines-to [value="+$("#lines-to").val()+"]").text();
-			var toLineColor = _linesColor[$("#lines-to").val()];
+			var fromLineName = $(fromLineSelector).children("[value="+from+"]").text();
+			var fromLineColor = _linesColor[from];
+			var toLineName = $(toLineSelector).children("[value="+to+"]").text();
+			var toLineColor = _linesColor[to];
 			if(horizontalFirst)
 				enterStation(true, fromLineName, fromLineColor, toLineName, toLineColor);
 			else
 				enterStation(false, toLineName, toLineColor, fromLineName, fromLineColor);
 			$(".overview").hide();
-			$(".station-view").show().find("h2").text($("#stations :selected").text());
+			$(".station-view").show().find("h2").text(stationName);
 		}, "json");
+	};
+	$("#query-btn").click(function() {
+		$("#map-tooltip .close-btn-icon").click();
+		queryAction($("#stations").val(), $("#stations :selected").text(), "#lines-from", "#lines-to", "#lines-from ~ :checkbox", "#lines-to ~ :checkbox");
 	});
 	// 重置动作
 	$("#reset-btn").click(function() {
+		$("#map-tooltip .close-btn-icon").click();
 		$(".overview").show();
 		$(".station-view").hide();
 	});
@@ -262,6 +276,44 @@ $(function() {
 		var x = 300;
 		var left = +img.css("left").substr(0, img.css("left").length - 2);
 		img.stop(true).animate({ left: "-=" + (left + img.width() - defWidth < 300 ? left + img.width() - defWidth : 300) });
+	});
+	var _stationsPoint = [];
+	// 获取各站点在地图中的坐标
+	$.post("service/getAllStationsPoint.json", function(result) {
+		if(!result) return;
+		_stationsPoint = result;
+	}, "json");
+	// 提示框
+	img.mousemove(function(e) {
+		var x = e.offsetX * WIDTH / img.width(), y = e.offsetY * HEIGHT / img.height();
+		for(var i = 0; i < _stationsPoint.length; i++) {
+			if(Math.pow(_stationsPoint[i].x - x, 2) + Math.pow(_stationsPoint[i].y - y, 2) < 900) {
+				img.css("cursor", "pointer").data("station", _stationsPoint[i].stationId).data("stationName", _stationsPoint[i].stationName);
+				return;
+			}
+		}
+		img.css("cursor", "auto");
+	}).click(function(e) {
+		if(img.css("cursor") != "pointer") return;
+		chooseStation(img.data("station"), "#lines-from-mini", "#lines-to-mini", function() {
+			$("#map-tooltip").css({ left: e.pageX-185, top: e.pageY+5 }).fadeIn().find(":checkbox").attr("checked", true);
+		});
+	});
+	$("#map-tooltip .close-btn-icon,#map-tooltip .confirm-btn-icon,.overview button").click(function() {
+		$("#map-tooltip").fadeOut();
+	});
+	$("#lines-from-mini,#lines-to-mini").change(function() {
+		var me = $(this);
+		var she = me.siblings("select");
+		if(me.val() == she.val())
+			she.children(":selected").siblings(":first").attr("selected", true);
+	});
+	$("#lines-from-mini ~ :checkbox,#lines-to-mini ~ :checkbox").change(function() {
+		if($(this).attr("checked")) return;
+		$(this).siblings(":checkbox[name="+$(this).attr("name")+"]:first").attr("checked", true);
+	});
+	$("#map-tooltip .confirm-btn-icon").click(function() {
+		queryAction(img.data("station"), img.data("stationName"), "#lines-from-mini", "#lines-to-mini", "#lines-from-mini ~ :checkbox", "#lines-to-mini ~ :checkbox");
 	});
 });
 
@@ -495,6 +547,16 @@ function formatTime(time) {
 					</div>
 				</div>
 			</div>
+		</div>
+		<div id="map-tooltip" style="display:none">
+			<div class="close-btn-icon">&nbsp;</div>
+			<label>换出线路：</label><select id="lines-from-mini"></select><br/>
+			<input type="checkbox" name="from" value="2" />上行 &nbsp;
+			<input type="checkbox" name="from" value="1" />下行<br/>
+			<label>换入线路：</label><select id="lines-to-mini"></select><br/>
+			<input type="checkbox" name="to" value="2" />上行 &nbsp;
+			<input type="checkbox" name="to" value="1" />下行
+			<div class="confirm-btn-icon">&nbsp;</div>
 		</div>
 	</body>
 </html>
