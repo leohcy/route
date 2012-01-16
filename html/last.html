@@ -379,7 +379,9 @@ $(function() {
 	}, "json");
 	// 提示框
 	img.mousemove(function(e) {
-		var x = e.offsetX * WIDTH / img.width(), y = e.offsetY * HEIGHT / img.height();
+		var offsetX = e.clientX-$(".overview").offset().left-img.css("left").substr(0, img.css("left").length - 2);
+		var offsetY = e.clientY-$(".overview").offset().top-img.css("top").substr(0, img.css("top").length - 2);
+		var x = offsetX * WIDTH / img.width(), y = offsetY * HEIGHT / img.height();
 		for(var i = 0; i < _stationsPoint.length; i++) {
 			if(_stationsPoint[i].stationId == 212 || _stationsPoint[i].stationId == 192) continue;
 			if(Math.pow(_stationsPoint[i].x - x, 2) + Math.pow(_stationsPoint[i].y - y, 2) < 900) {
