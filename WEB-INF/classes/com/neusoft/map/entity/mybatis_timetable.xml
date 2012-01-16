@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.neusoft.map.entity.TimetableRepository">
+	<cache />
+	
+	<select id="selectTrains" parameterType="java.util.Map" resultType="java.lang.String">
+		SELECT
+			tranid
+		FROM
+			trainWorkingdiagram
+		WHERE
+			lineid=#{id} and direction=#{direction}
+		GROUP BY
+			lineid,tranid
+	</select>
+	
+	<select id="selectTimetableByTrain" parameterType="java.util.Map" resultType="com.neusoft.map.entity.StationTimeEntity">
+		SELECT
+			stationid as station, arrivaltime, departuretime
+		FROM
+			trainWorkingdiagram t1
+		WHERE
+			lineid=#{id} and tranid=#{tran}
+	</select>
+
+</mapper>

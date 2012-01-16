@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans        
+ 		http://www.springframework.org/schema/beans/spring-beans.xsd       
+ 		http://www.springframework.org/schema/context        
+ 		http://www.springframework.org/schema/context/spring-context.xsd
+ 		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+	
+	<context:annotation-config />
+	<context:component-scan base-package="com.neusoft" />
+	
+	<bean id="unitOfWorkFactory" class="com.neusoft.education.edp.persistence.UnitOfWorkFactory">
+		<property name="unitOfWorks">
+			<map>
+				<entry key="mybatis" value="com.neusoft.education.edp.persistence.mybatis.MyBatisUnitOfWork"></entry>
+			</map>
+		</property>
+		<property name="sessions">
+			<map>
+				<entry key="mybatis">
+					<ref bean="sqlSessionFactory"/>
+				</entry>
+			</map>
+		</property>
+	</bean>
+	
+	<bean id="sqlSessionFactory" class="com.neusoft.education.edp.persistence.mybatis.ConfigurableSqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<property name="transactionFactory" ref="transactionFactory"></property>
+		<property name="pkgs" value="classpath*:com/**/*.xml"></property>
+		<property name="dbType" value="mysql"></property>
+	</bean>
+	
+	<bean id="transactionFactory" class="org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory">
+	</bean>
+	
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://192.168.111.62:3306/hechy?useUnicode=true&amp;characterEncoding=UTF-8" />
+		<property name="username" value="root" />
+		<property name="password" value="bjneusoft" />
+	</bean>
+	
+	<!-- 声明式事物 -->
+	<bean id="transactionInterceptor" class="com.neusoft.education.edp.persistence.mybatis.TransactionInterceptor"/>
+	<!--
+	<aop:config>
+		<aop:pointcut id="allSaveMethod" expression="execution(* com.neusoft.education.edp.test.application.DomainManager.add*(..))"/>
+		<aop:advisor advice-ref="transactionInterceptor"  pointcut-ref="allSaveMethod"/>
+	</aop:config>
+	-->
+</beans>
