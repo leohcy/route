@@ -11,7 +11,7 @@
 .radius-border { -moz-border-radius:4px; -webkit-border-radius:4px; border:1px solid #aaa; }
 .query-box-title { -moz-border-radius-topleft: 4px; -webkit-border-top-left-radius: 4px; -moz-border-radius-topright: 4px; -webkit-border-top-right-radius: 4px;
 	background:-moz-linear-gradient(top, #FFF, #B3DCFD); background:-webkit-linear-gradient(top, #FFF, #B3DCFD); padding:10px 20px; font-weight:bold; }
-.query-box-body { height:280px; padding:10px; position:relative; }
+.query-box-body { height:400px; padding:10px; position:relative; }
 #stations { width:160px; margin-left:40px; }
 #lines-from,#lines-to { width:100px; margin-left:10px; }
 .query-box-body .buttons { position:absolute; bottom:0px; padding-left:100px; }
@@ -24,9 +24,9 @@
 .station-view { position:relative; }
 .station-view h2 { position:absolute; top:165px; left:195px; color:#FFF; }
 .station-view h3 { position:absolute; color:#FFF; }
-.station-view table { position:absolute; top:400px; right:0px; width:680px; border-top:1px solid #888; border-left:1px solid #888; }
+.station-view table { position:absolute; top:400px; right:0px; width:650px; border-top:1px solid #888; border-left:1px solid #888; }
 .station-view th, .station-view td { border-bottom:1px solid #888; border-right:1px solid #888; }
-.station-view .tooltip { position:absolute; width:160px; height:100px; padding:5px; background-color:#a4a4a4;
+.station-view .tooltip { position:absolute; width:160px; height:120px; padding:5px; background-color:#a4a4a4;
 	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #6fc; }
 #map-tooltip { position:absolute; width:160px; height:130px; padding:5px; background-color:#fff;
 	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #39f; }
@@ -36,6 +36,8 @@
 .confirm-btn-icon { background-image:url(resources/images/icons.png); background-position:-64px -144px;
 	width:16px; height:16px; position:absolute; bottom:10px; right:10px; cursor:pointer; }
 select.hours,select.minutes { width:50px; margin-left:10px; }
+.train-info-in-station table { border-top:1px solid #888; border-left:1px solid #888; }
+.train-info-in-station th,.train-info-in-station td { border-bottom:1px solid #888; border-right:1px solid #888; }
 		</style>
 		<script type="text/javascript" src="resources/jquery-1.7.1.min.js"></script>
 		<script type="text/javascript" src="resources/raphael.js"></script>
@@ -109,16 +111,185 @@ $(function() {
 		$(this).siblings(":checkbox:first").attr("checked", true);
 	});
 	// 选择时间点
-	var hours = $("select.hours");
+	var hours = $("select.hours,select.from-hours,select.to-hours");
 	for(var i = 0; i < 24; i++)
 		$("<option/>").val(i).text(i).appendTo(hours);
-	var minutes = $("select.minutes");
+	var minutes = $("select.minutes,select.from-minutes,select.to-minutes");
 	for(var i = 0; i < 60; i++)
 		$("<option/>").val(i).text(i).appendTo(minutes);
 	hours.val(new Date().getHours());
 	minutes.val(new Date().getMinutes());
 	// 检索动作
 	var stopLastAnimation = null;
+	window.queryActionByPeriod = function(stationId, stationName, fromLineSelector, toLineSelector, fromLineDirsSelector, toLineDirsSelector) {
+		if(stationId == 0) {
+			alert("请选择车站");
+			return;
+		}
+		var from = $(fromLineSelector).val(), to = $(toLineSelector).val(), toDirs = $(toLineDirsSelector);
+		var dirs = 0;
+		$(fromLineDirsSelector).filter(":checked").each(function() {
+			dirs += Number($(this).val());
+		});
+		var startTime = new Date();
+		startTime.setDate(7);
+		startTime.setHours($("select.from-hours").val());
+		startTime.setMinutes($("select.from-minutes").val());
+		var endTime = new Date();
+		endTime.setDate(7);
+		endTime.setHours($("select.to-hours").val());
+		endTime.setMinutes($("select.to-minutes").val());
+		var params = {stationId: stationId, lineId: from, lineDirs: dirs, startTime: startTime.getTime(), endTime: endTime.getTime()};
+		$.post("../Service?method=findTrainsByTimePeroid", params, function(result) {
+			if(!result) return;
+			var tbody = $(".train-info-in-station tbody").empty();
+			$.each(result, function() {
+				var dir = this.lineDirs, rows = this.trains.length;
+				$.each(this.trains, function(idx) {
+					var tr = "<tr>";
+					if(idx == 0)
+						tr += "<td rowspan='"+rows+"'>"+(dir==1?"下行":"上行")+"</td>";
+					tr += "<td>"+this.trainId+"</td>"+"<td>"+formatTime(this.arrivalTime)+"</td>"+"<td>"+formatTime(this.departureTime)+"</td></tr>";
+					tbody.append($(tr).data("line", from).data("dir", dir).data("train", this.trainId).data("arrival", this.arrivalTime));
+				});
+			});
+			if(tbody.children().length == 0)
+				tbody.append("<tr><td colspan='4' style='text-align:center'>区间内无车辆</td></tr>");
+			else {
+				tbody.find("td:not([rowspan])").css("cursor", "pointer").click(function() {
+					var routes = [];
+					var tr = $(this).closest("tr");
+					var from = tr.data("line"), dir = tr.data("dir"), train = tr.data("train"), arrival = tr.data("arrival");
+					$.each(_availableRoutes, function(routeId) {
+						if(this.fromLine.lineId == from && this.toLine.lineId == to && this.fromLine.lineDir == dir
+								&& toDirs.filter(":checked[value="+this.toLine.lineDir+"]").length > 0)
+							routes.push(routeId);
+					});
+					if(routes.length == 0) {
+						alert("没有符合条件的换乘路线");
+						return;
+					}
+					var params = {stationId: stationId, routeIds: routes.join(","), fromTrainId: train};
+					$.post("../Service?method=findTransferSolutionByFromTrain", params, function(result) {
+						if(!result) return;
+						var routes = [];
+						$.each(result, function() {
+							var route = _availableRoutes[this.routeId];
+							var tr = "<tr>";
+							tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"-"+route.toLine.lineName+"</td>";
+							tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
+							tr += "<td>"+train+"</td>";
+							tr += "<td>"+formatTime(arrival)+"</td>";
+							tr += "<td>"+Math.floor(this.walkTime/60)+"分钟"+"</td>";
+							tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
+							if(this.toTrain) {
+								tr += "<td>"+this.toTrain.trainId+"</td>";
+								tr += "<td>"+formatTime(this.toTrain.departureTime)+"</td>";
+								tr += "<td>"+Math.floor(this.waitTime/60)+"分钟"+"</td>";
+								tr += "<td>可达</td>";
+							} else {
+								tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
+								tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
+								tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
+								tr += "<td style='background-color:#BFBFBF'>不可达</td>";
+							}
+							tr += "</tr>";
+							routes.push([route.fromLine.lineId, route.toLine.lineId, route.fromLine.lineDir, route.toLine.lineDir, $(tr)]);
+						});
+						routes.sort(function(a, b) {
+							return (a[0] - b[0] != 0)?(a[0] - b[0]):((a[1] - b[1] != 0)?(a[1] - b[1]):((a[2] - b[2] != 0)?(a[2] - b[2]):((a[3] - b[3] != 0)?(a[3] - b[3]):0)));
+						});
+						for(var i = 1; i < routes.length; i++) {
+							var up = routes[i-1][4], down = routes[i][4];
+							if(up.children(":eq(1)").attr("rel") == down.children(":eq(1)").attr("rel")) {
+								up.children(":eq(1),:eq(2),:eq(3)").attr("rowspan", 2);
+								down.children(":eq(1),:eq(2),:eq(3)").remove();
+								i++;
+							}
+						}
+						for(var i = 0; i < routes.length; i++) {
+							var up = routes[i][4], j = i + 1;
+							while(j < routes.length) {
+								var down = routes[j][4];
+								if(up.children(":eq(0)").attr("rel") != down.children(":eq(0)").attr("rel"))
+									break;
+								down.children(":eq(0)").remove();
+								j++;
+							}
+							if(j - i > 1) {
+								up.children(":eq(0)").attr("rowspan", j - i);
+								i += (j - i - 1);
+							}
+						}
+						var tbody = $(".station-view tbody").empty();
+						$.each(routes, function() {
+							tbody.append(this[4]);
+						});
+						
+						var fromDir = _linesDirInStation[stationId][from];
+						var toDir = _linesDirInStation[stationId][to];
+						var quadrant = [];
+						if(fromDir == "WE" && toDir == "SN")
+							quadrant = [ [2,2], [1,2], [1,1], [2,1] ];
+						else if(fromDir == "NS" && toDir == "EW")
+							quadrant = [ [2,2], [2,1], [1,1], [1,2] ];
+						else if(fromDir == "EW" && toDir == "SN")
+							quadrant = [ [1,2], [2,2], [2,1], [1,1] ];
+						else if(fromDir == "NS" && toDir == "WE")
+							quadrant = [ [2,1], [2,2], [1,2], [1,1] ];
+						else if(fromDir == "EW" && toDir == "NS")
+							quadrant = [ [1,1], [2,1], [2,2], [1,2] ];
+						else if(fromDir == "SN" && toDir == "WE")
+							quadrant = [ [1,1], [1,2], [2,2], [2,1] ];
+						else if(fromDir == "WE" && toDir == "NS")
+							quadrant = [ [2,1], [1,1], [1,2], [2,2] ];
+						else if(fromDir == "SN" && toDir == "EW")
+							quadrant = [ [1,2], [1,1], [2,1], [2,2] ];
+						routes = {};
+						for(var i = 0; i < quadrant.length; i++) {
+							$.each(_availableRoutes, function(routeId) {
+								if(this.fromLine.lineId == from && this.toLine.lineId == to
+										&& this.fromLine.lineDir == quadrant[i][0]
+										&& this.toLine.lineDir == quadrant[i][1])
+									routes[routeId] = i;
+							});
+						}
+						var tooltips = $(".station-view .tooltip").hide();
+						$.each(result, function() {
+							if(typeof routes[this.routeId] == "undefined") return;
+							var tooltip = tooltips.eq(routes[this.routeId]);
+							if(this.toTrain) {
+								tooltip.find(".from-train-id").text(train);
+								tooltip.find(".from-arrival-time").text(formatTime(arrival));
+								tooltip.find(".to-train-id").text(this.toTrain.trainId);
+								tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
+								tooltip.find(".walk-time").text(Math.floor(this.walkTime/60));
+								tooltip.find(".wait-time").text(Math.floor(this.waitTime/60));
+								tooltip.find(".yesno").hide();
+								tooltip.show();
+							}
+						});
+						
+						var horizontalFirst = fromDir == "WE" || fromDir == "EW";
+						var fromLineName = $(fromLineSelector).children("[value="+from+"]").text();
+						var fromLineColor = _linesColor[from];
+						var toLineName = $(toLineSelector).children("[value="+to+"]").text();
+						var toLineColor = _linesColor[to];
+						if(stopLastAnimation) stopLastAnimation();
+						if(horizontalFirst)
+							stopLastAnimation = enterStation(true, fromLineName, fromLineColor, toLineName, toLineColor);
+						else
+							stopLastAnimation = enterStation(false, toLineName, toLineColor, fromLineName, fromLineColor);
+						zoomIntoStation(stationId, function() {
+							$(".overview").hide().find("img").css("opacity", 1);
+							$(".station-view").fadeIn("slow").find("h2").text(stationName);
+						});
+					}, "json");
+				});
+			}
+			$(".train-info-in-station").fadeIn();
+		}, "json");
+	};
 	window.queryAction = function(stationId, stationName, fromLineSelector, toLineSelector, fromLineDirsSelector, toLineDirsSelector) {
 		var from = $(fromLineSelector).val(), to = $(toLineSelector).val();
 		var fromDirs = $(fromLineDirsSelector), toDirs = $(toLineDirsSelector);
@@ -134,8 +305,9 @@ $(function() {
 			return;
 		}
 		var time = new Date();
-		time.setHours(hours.val());
-		time.setMinutes(minutes.val());
+		time.setDate(7);
+		time.setHours($("select.hours").val());
+		time.setMinutes($("select.minutes").val());
 		$.post("../Service?method=findTransferSolutionByTime", {stationId: stationId, routeIds: routes.join(","), time:time.getTime()}, function(result) {
 			if(!result) return;
 			var routes = [];
@@ -145,12 +317,12 @@ $(function() {
 				tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"-"+route.toLine.lineName+"</td>";
 				tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
 				tr += "<td>"+this.fromTrain.trainId+"</td>";
-				tr += "<td>"+formatDate(this.fromTrain.arrivalTime)+"</td>";
+				tr += "<td>"+formatTime(this.fromTrain.arrivalTime)+"</td>";
 				tr += "<td>"+Math.floor(this.walkTime/60)+"分钟"+"</td>";
 				tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
 				if(this.toTrain) {
 					tr += "<td>"+this.toTrain.trainId+"</td>";
-					tr += "<td>"+formatDate(this.toTrain.departureTime)+"</td>";
+					tr += "<td>"+formatTime(this.toTrain.departureTime)+"</td>";
 					tr += "<td>"+Math.floor(this.waitTime/60)+"分钟"+"</td>";
 					tr += "<td>可达</td>";
 				} else {
@@ -201,11 +373,11 @@ $(function() {
 					tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"-"+route.toLine.lineName+"</td>";
 					tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
 					tr += "<td>"+this.fromTrain.trainId+"</td>";
-					tr += "<td>"+formatDate(this.fromTrain.arrivalTime)+"</td>";
+					tr += "<td>"+formatTime(this.fromTrain.arrivalTime)+"</td>";
 					tr += "<td>"+Math.floor(this.walkTime/60)+"分钟"+"</td>";
 					tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
 					tr += "<td>"+this.toTrain.trainId+"</td>";
-					tr += "<td>"+formatDate(this.toTrain.departureTime)+"</td>";
+					tr += "<td>"+formatTime(this.toTrain.departureTime)+"</td>";
 					tr += "<td>"+Math.floor(this.waitTime/60)+"分钟"+"</td>";
 					tr += "<td>可达</td>";
 					tr += "</tr>";
@@ -270,15 +442,32 @@ $(function() {
 				});
 			}
 			var tooltips = $(".station-view .tooltip").hide();
-			$.each(result.reachable, function() {
+			$.each(result.lastest, function() {
 				if(typeof routes[this.routeId] == "undefined") return;
 				var tooltip = tooltips.eq(routes[this.routeId]);
-				tooltip.find(".from-train-id").text(this.fromTrain.trainId);
-				tooltip.find(".from-arrival-time").text(formatTime(this.fromTrain.arrivalTime));
-				tooltip.find(".to-train-id").text(this.toTrain.trainId);
-				tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
-				tooltip.find(".walk-time").text(Math.floor(this.walkTime/60));
-				tooltip.find(".wait-time").text(Math.floor(this.waitTime/60));
+				if(this.toTrain) {
+					tooltip.find(".from-train-id").text(this.fromTrain.trainId);
+					tooltip.find(".from-arrival-time").text(formatTime(this.fromTrain.arrivalTime));
+					tooltip.find(".to-train-id").text(this.toTrain.trainId);
+					tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
+					tooltip.find(".walk-time").text(Math.floor(this.walkTime/60));
+					tooltip.find(".wait-time").text(Math.floor(this.waitTime/60));
+					tooltip.find(".yesno").hide();
+				} else {
+					var routeId = this.routeId;
+					$.each(result.reachable, function() {
+						if(this.routeId == routeId) {
+							tooltip.find(".from-train-id").text(this.fromTrain.trainId);
+							tooltip.find(".from-arrival-time").text(formatTime(this.fromTrain.arrivalTime));
+							tooltip.find(".to-train-id").text(this.toTrain.trainId);
+							tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
+							tooltip.find(".walk-time").text(Math.floor(this.walkTime/60));
+							tooltip.find(".wait-time").text(Math.floor(this.waitTime/60));
+							tooltip.find(".yesno").show();
+							return false;
+						}
+					});
+				}
 				tooltip.show();
 			});
 			
@@ -300,12 +489,16 @@ $(function() {
 	};
 	$("#query-btn").click(function() {
 		$("#reset-btn").click();
-		queryAction($("#stations").val(), $("#stations :selected").text(), "#lines-from", "#lines-to", "#lines-from ~ :checkbox", "#lines-to ~ :checkbox");
+		if($(":radio[name=time-mode]:checked").val() == 0)
+			queryAction($("#stations").val(), $("#stations :selected").text(), "#lines-from", "#lines-to", "#lines-from ~ :checkbox", "#lines-to ~ :checkbox");
+		else
+			queryActionByPeriod($("#stations").val(), $("#stations :selected").text(), "#lines-from", "#lines-to", "#lines-from ~ :checkbox", "#lines-to ~ :checkbox");
 	});
 	// 重置动作
 	$("#reset-btn").click(function() {
 		$("#map-tooltip .close-btn-icon").click();
 		resetMap();
+		$(".train-info-in-station").hide();
 		$(".overview").show();
 		$(".station-view").hide();
 	});
@@ -322,7 +515,7 @@ $(function() {
 		img.css("top", (defHeight - img.height()) / 2);
 	});
 	window.resetMap = function() {
-		img.stop(true).animate({ width: defWidth, top: (defHeight - defWidth * WIDTH / HEIGHT) / 2, left: 0 }, "slow");
+		img.stop(true).delay(200).animate({ width: defWidth, top: (defHeight - defWidth * WIDTH / HEIGHT) / 2, left: 0 }, "slow");
 	};
 	var WIDTH = 2082, HEIGHT = 1921;
 	// 缩放按钮
@@ -406,7 +599,10 @@ $(function() {
 		$(this).siblings(":checkbox[name="+$(this).attr("name")+"]:first").attr("checked", true);
 	});
 	$("#map-tooltip .confirm-btn-icon").click(function() {
-		queryAction(img.data("station"), img.data("stationName"), "#lines-from-mini", "#lines-to-mini", "#lines-from-mini ~ :checkbox", "#lines-to-mini ~ :checkbox");
+		if($(":radio[name=time-mode]:checked").val() == 0)
+			queryAction(img.data("station"), img.data("stationName"), "#lines-from-mini", "#lines-to-mini", "#lines-from-mini ~ :checkbox", "#lines-to-mini ~ :checkbox");
+		else
+			queryActionByPeriod(img.data("station"), img.data("stationName"), "#lines-from-mini", "#lines-to-mini", "#lines-from-mini ~ :checkbox", "#lines-to-mini ~ :checkbox");
 	});
 });
 
@@ -553,12 +749,6 @@ function padLeft(num) {
 	return num;
 }
 
-function formatDate(time) {
-	time = new Date(time);
-	return (time.getFullYear() + "-" + padLeft(time.getMonth() + 1) + "-" + padLeft(time.getDate()) + " " +
-		padLeft(time.getHours()) + ":" + padLeft(time.getMinutes()) + ":" + padLeft(time.getSeconds()));
-}
-
 function formatTime(time) {
 	time = new Date(time);
 	return (padLeft(time.getHours()) + ":" + padLeft(time.getMinutes()) + ":" + padLeft(time.getSeconds()));
@@ -584,6 +774,11 @@ function formatTime(time) {
 							<input type="radio" name="time-mode" value="0" checked="checked" /><label>检索时刻</label><br/>
 							<select class="hours"></select> 时 <select class="minutes"></select> 分
 						</p>
+						<p>
+							<input type="radio" name="time-mode" value="1" /><label>检索时间范围</label><br/>
+							<span style="margin-left:10px">&nbsp;</span> 起始时间 <select class="from-hours"></select> 时 <select class="from-minutes"></select> 分<br/>
+							<span style="margin-left:10px">&nbsp;</span> 截止时间 <select class="to-hours"></select> 时 <select class="to-minutes"></select> 分
+						</p>
 						<p class="lines" style="display:none">
 							<label>换出线路：</label><select id="lines-from"></select>&nbsp; 
 							<input type="checkbox" value="2" />上行 &nbsp;
@@ -595,6 +790,22 @@ function formatTime(time) {
 							<input type="checkbox" value="1" />下行
 						</p>
 						<p class="buttons"><button id="query-btn">检索</button><button id="reset-btn">重置</button></p>
+					</div>
+				</div>
+				<div class="radius-border train-info-in-station" style="margin-top:10px; display:none;">
+					<h4 class="query-box-title bottom">站点时间段内车次信息</h4>
+					<div class="query-box-body" style="height:auto">
+						<table border="0" cellspacing="0" cellpadding="0" class="bottom">
+							<thead>
+								<tr>
+									<th>线路</th>
+									<th>车次</th>
+									<th>到达时刻</th>
+									<th>出发时刻</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
 					</div>
 				</div>
 			</div>
@@ -615,14 +826,14 @@ function formatTime(time) {
 					<table border="0" cellspacing="0" cellpadding="0">
 						<thead>
 							<tr>
-								<th width="90px">换出/换入</th>
-								<th width="90px">到达车<br/>行车方向</th>
-								<th width="50px">到达车<br/>车次</th>
-								<th width="80px">到达车<br/>到达时刻</th>
+								<th width="100px">换出/换入</th>
+								<th width="100px">到达车<br/>行车方向</th>
+								<th width="40px">到达车<br/>车次</th>
+								<th width="60px">到达车<br/>到达时刻</th>
 								<th width="50px">换乘<br/>时间</th>
-								<th width="90px">换乘车<br/>行车方向</th>
-								<th width="50px">换乘车<br/>车次</th>
-								<th width="80px">换乘车<br/>发车时刻</th>
+								<th width="100px">换乘车<br/>行车方向</th>
+								<th width="40px">换乘车<br/>车次</th>
+								<th width="60px">换乘车<br/>发车时刻</th>
 								<th width="50px">等待<br/>时间</th>
 								<th width="50px">是否<br/>可达</th>
 							</tr>
@@ -630,32 +841,40 @@ function formatTime(time) {
 						<tbody></tbody>
 					</table>
 					<div class="tooltip" style="top:10px; left:10px; display:none;">
-						<h4 class="bottom">换乘等待时间为<span class="wait-time">0</span>分钟</h4>
+						<h4 class="bottom">到达列车<span class="yesno" style="display:none">不</span>可换乘</h4>
 						<hr class="bottom" style="margin:5px 0" />
-						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
+						<span class="yesno" style="display:none">最晚换乘方案</span><br/>
+						末班车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0</span>分钟
+						换乘时间：<span class="walk-time">0</span>分钟<br/>
+						等待时间：<span class="wait-time">0</span>分钟
 					</div>
 					<div class="tooltip" style="top:10px; left:280px; display:none;">
-						<h4 class="bottom">换乘等待时间为<span class="wait-time">0</span>分钟</h4>
+						<h4 class="bottom">到达列车<span class="yesno" style="display:none">不</span>可换乘</h4>
 						<hr class="bottom" style="margin:5px 0" />
-						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
+						<span class="yesno" style="display:none">最晚换乘方案</span><br/>
+						末班车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0</span>分钟
+						换乘时间：<span class="walk-time">0</span>分钟<br/>
+						等待时间：<span class="wait-time">0</span>分钟
 					</div>
 					<div class="tooltip" style="top:240px; left:280px; display:none;">
-						<h4 class="bottom">换乘等待时间为<span class="wait-time">0</span>分钟</h4>
+						<h4 class="bottom">到达列车<span class="yesno" style="display:none">不</span>可换乘</h4>
 						<hr class="bottom" style="margin:5px 0" />
-						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
+						<span class="yesno" style="display:none">最晚换乘方案</span><br/>
+						末班车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0</span>分钟
+						换乘时间：<span class="walk-time">0</span>分钟<br/>
+						等待时间：<span class="wait-time">0</span>分钟
 					</div>
 					<div class="tooltip" style="top:240px; left:10px; display:none;">
-						<h4 class="bottom">换乘等待时间为<span class="wait-time">0</span>分钟</h4>
+						<h4 class="bottom">到达列车<span class="yesno" style="display:none">不</span>可换乘</h4>
 						<hr class="bottom" style="margin:5px 0" />
-						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
+						<span class="yesno" style="display:none">最晚换乘方案</span><br/>
+						末班车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0</span>分钟
+						换乘时间：<span class="walk-time">0</span>分钟<br/>
+						等待时间：<span class="wait-time">0</span>分钟
 					</div>
 				</div>
 			</div>
