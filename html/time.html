@@ -24,7 +24,7 @@
 .station-view { position:relative; }
 .station-view h2 { position:absolute; top:165px; left:195px; color:#FFF; }
 .station-view h3 { position:absolute; color:#FFF; }
-.station-view table { position:absolute; top:400px; right:0px; width:660px; border-top:1px solid #888; border-left:1px solid #888; }
+.station-view table { position:absolute; top:400px; right:0px; width:680px; border-top:1px solid #888; border-left:1px solid #888; }
 .station-view th, .station-view td { border-bottom:1px solid #888; border-right:1px solid #888; }
 .station-view .tooltip { position:absolute; width:160px; height:120px; padding:5px; background-color:#a4a4a4;
 	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #6fc; }
@@ -43,11 +43,12 @@ select.hours,select.minutes { width:50px; margin-left:10px; }
 $(function() {
 	// ---------- 查询输入框相关 ----------------
 	// 获取所有换乘站点名称
-	$.post("service/getAllTransferStations.json", function(result) {
+	$.post("../Service?method=getAllTransferStations", function(result) {
 		if(!result) return;
 		var stations = $("#stations");
 		$.each(result, function() {
-			$("<option/>").val(this.stationId).text(this.stationName).appendTo(stations);
+			if(this.id == 224) return;
+			$("<option/>").val(this.id).text(this.name).appendTo(stations);
 		});
 	}, "json");
 	var _linesDirInStation = {};
@@ -65,7 +66,7 @@ $(function() {
 	// 选择一个车站
 	var _availableRoutes = {};
 	window.chooseStation = function(stationId, fromLinesSelector, toLinesSelector, callback) {
-		$.post("service/findRoutesByStation.json", { stationId: stationId }, function(result) {
+		$.post("../Service?method=findRoutesByStation", { stationId: stationId }, function(result) {
 			if(!result) return;
 			var fromLines = {}, toLines = {};
 			_availableRoutes = {};
@@ -117,6 +118,7 @@ $(function() {
 	hours.val(new Date().getHours());
 	minutes.val(new Date().getMinutes());
 	// 检索动作
+	var stopLastAnimation = null;
 	window.queryAction = function(stationId, stationName, fromLineSelector, toLineSelector, fromLineDirsSelector, toLineDirsSelector) {
 		var from = $(fromLineSelector).val(), to = $(toLineSelector).val();
 		var fromDirs = $(fromLineDirsSelector), toDirs = $(toLineDirsSelector);
@@ -134,7 +136,7 @@ $(function() {
 		var time = new Date();
 		time.setHours(hours.val());
 		time.setMinutes(minutes.val());
-		$.post("service/findTransferSolutionByTime.json", {stationId: stationId, routeIds: routes.join(","), time:time.getTime()}, function(result) {
+		$.post("../Service?method=findTransferSolutionByTime", {stationId: stationId, routeIds: routes.join(","), time:time.getTime()}, function(result) {
 			if(!result) return;
 			var routes = [];
 			$.each(result.lastest, function() {
@@ -144,12 +146,12 @@ $(function() {
 				tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
 				tr += "<td>"+this.fromTrain.trainId+"</td>";
 				tr += "<td>"+formatDate(this.fromTrain.arrivalTime)+"</td>";
-				tr += "<td>"+this.walkTime/60 + "分钟"+"</td>";
+				tr += "<td>"+Math.floor(this.walkTime/60)+"分钟"+"</td>";
 				tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
 				if(this.toTrain) {
 					tr += "<td>"+this.toTrain.trainId+"</td>";
 					tr += "<td>"+formatDate(this.toTrain.departureTime)+"</td>";
-					tr += "<td>"+this.waitTime/60 + "分钟"+"</td>";
+					tr += "<td>"+Math.floor(this.waitTime/60)+"分钟"+"</td>";
 					tr += "<td>可达</td>";
 				} else {
 					tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
@@ -200,11 +202,11 @@ $(function() {
 					tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
 					tr += "<td>"+this.fromTrain.trainId+"</td>";
 					tr += "<td>"+formatDate(this.fromTrain.arrivalTime)+"</td>";
-					tr += "<td>"+this.walkTime/60 + "分钟"+"</td>";
+					tr += "<td>"+Math.floor(this.walkTime/60)+"分钟"+"</td>";
 					tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
 					tr += "<td>"+this.toTrain.trainId+"</td>";
 					tr += "<td>"+formatDate(this.toTrain.departureTime)+"</td>";
-					tr += "<td>"+this.waitTime/60 + "分钟"+"</td>";
+					tr += "<td>"+Math.floor(this.waitTime/60)+"分钟"+"</td>";
 					tr += "<td>可达</td>";
 					tr += "</tr>";
 					routes.push([route.fromLine.lineId, route.toLine.lineId, route.fromLine.lineDir, route.toLine.lineDir, $(tr)]);
@@ -276,8 +278,8 @@ $(function() {
 					tooltip.find(".from-arrival-time").text(formatTime(this.fromTrain.arrivalTime));
 					tooltip.find(".to-train-id").text(this.toTrain.trainId);
 					tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
-					tooltip.find(".walk-time").text(this.walkTime/60);
-					tooltip.find(".wait-time").text(this.waitTime/60);
+					tooltip.find(".walk-time").text(Math.floor(this.walkTime/60));
+					tooltip.find(".wait-time").text(Math.floor(this.waitTime/60));
 					tooltip.find(".yesno").hide();
 				} else {
 					var routeId = this.routeId;
@@ -287,8 +289,8 @@ $(function() {
 							tooltip.find(".from-arrival-time").text(formatTime(this.fromTrain.arrivalTime));
 							tooltip.find(".to-train-id").text(this.toTrain.trainId);
 							tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
-							tooltip.find(".walk-time").text(this.walkTime/60);
-							tooltip.find(".wait-time").text(this.waitTime/60);
+							tooltip.find(".walk-time").text(Math.floor(this.walkTime/60));
+							tooltip.find(".wait-time").text(Math.floor(this.waitTime/60));
 							tooltip.find(".yesno").show();
 							return false;
 						}
@@ -302,10 +304,11 @@ $(function() {
 			var fromLineColor = _linesColor[from];
 			var toLineName = $(toLineSelector).children("[value="+to+"]").text();
 			var toLineColor = _linesColor[to];
+			if(stopLastAnimation) stopLastAnimation();
 			if(horizontalFirst)
-				enterStation(true, fromLineName, fromLineColor, toLineName, toLineColor);
+				stopLastAnimation = enterStation(true, fromLineName, fromLineColor, toLineName, toLineColor);
 			else
-				enterStation(false, toLineName, toLineColor, fromLineName, fromLineColor);
+				stopLastAnimation = enterStation(false, toLineName, toLineColor, fromLineName, fromLineColor);
 			zoomIntoStation(stationId, function() {
 				$(".overview").hide().find("img").css("opacity", 1);
 				$(".station-view").fadeIn("slow").find("h2").text(stationName);
@@ -313,12 +316,13 @@ $(function() {
 		}, "json");
 	};
 	$("#query-btn").click(function() {
-		$("#map-tooltip .close-btn-icon").click();
+		$("#reset-btn").click();
 		queryAction($("#stations").val(), $("#stations :selected").text(), "#lines-from", "#lines-to", "#lines-from ~ :checkbox", "#lines-to ~ :checkbox");
 	});
 	// 重置动作
 	$("#reset-btn").click(function() {
 		$("#map-tooltip .close-btn-icon").click();
+		resetMap();
 		$(".overview").show();
 		$(".station-view").hide();
 	});
@@ -334,6 +338,9 @@ $(function() {
 	img.load(function() {
 		img.css("top", (defHeight - img.height()) / 2);
 	});
+	window.resetMap = function() {
+		img.stop(true).animate({ width: defWidth, top: (defHeight - defWidth * WIDTH / HEIGHT) / 2, left: 0 }, "slow");
+	};
 	var WIDTH = 2082, HEIGHT = 1921;
 	// 缩放按钮
 	$("#zoom-in-btn").click(function() {
@@ -456,28 +463,30 @@ $(function() {
 		$(".station-view h3:last").text(verticalLineName).css({ top: HEIGHT-40, left: 100 });
 		horizontalColor.attr({ fill: horizontalLineColor });
 		verticalColor.attr({ fill: verticalLineColor });
-		lines[0].stop().attr(horizontalFirst ? { gra_e: 0 } : { gra_w: 0 });
-		lines[1].stop().attr(horizontalFirst ? { gra_n: 0 } : { gra_s: 0 });
-		lines[2].stop().attr(horizontalFirst ? { gra_e: 0 } : { gra_w: 0 });
-		lines[3].stop().attr(horizontalFirst ? { gra_s: 0 } : { gra_n: 0 });
-		lines[4].stop().attr(horizontalFirst ? { gra_w: 0 } : { gra_e: 0 });
-		lines[5].stop().attr(horizontalFirst ? { gra_n: 0 } : { gra_s: 0 });
-		lines[6].stop().attr(horizontalFirst ? { gra_w: 0 } : { gra_e: 0 });
-		lines[7].stop().attr(horizontalFirst ? { gra_s: 0 } : { gra_n: 0 });
+		lines[0].attr(horizontalFirst ? { gra_e: 0 } : { gra_w: 0 });
+		lines[1].attr(horizontalFirst ? { gra_n: 0 } : { gra_s: 0 });
+		lines[2].attr(horizontalFirst ? { gra_e: 0 } : { gra_w: 0 });
+		lines[3].attr(horizontalFirst ? { gra_s: 0 } : { gra_n: 0 });
+		lines[4].attr(horizontalFirst ? { gra_w: 0 } : { gra_e: 0 });
+		lines[5].attr(horizontalFirst ? { gra_n: 0 } : { gra_s: 0 });
+		lines[6].attr(horizontalFirst ? { gra_w: 0 } : { gra_e: 0 });
+		lines[7].attr(horizontalFirst ? { gra_s: 0 } : { gra_n: 0 });
+		var running = true;
 		(function() {
+			if(!running) return;
 			var func = arguments.callee;
 			if(horizontalFirst) {
-				lines[0].animate({ gra_e: 100 }, 200 * INTERVAL, function() {
+				lines[0].stop().animate({ gra_e: 100 }, 200 * INTERVAL, function() {
 					lines[0].attr({ gra_e: 0 });
-					lines[1].animate({ gra_n: 100 }, 160 * INTERVAL, function() {
+					lines[1].stop().animate({ gra_n: 100 }, 160 * INTERVAL, function() {
 						lines[1].attr({ gra_n: 0 });
 						func();
 					});
 				});
 			} else {
-				lines[1].animate({ gra_s: 100 }, 160 * INTERVAL, function() {
+				lines[1].stop().animate({ gra_s: 100 }, 160 * INTERVAL, function() {
 					lines[1].attr({ gra_s: 0 });
-					lines[0].animate({ gra_w: 100 }, 200 * INTERVAL, function() {
+					lines[0].stop().animate({ gra_w: 100 }, 200 * INTERVAL, function() {
 						lines[0].attr({ gra_w: 0 });
 						func();
 					});
@@ -485,19 +494,20 @@ $(function() {
 			}
 		})();
 		(function() {
+			if(!running) return;
 			var func = arguments.callee;
 			if(horizontalFirst) {
-				lines[2].animate({ gra_e: 100 }, 200 * INTERVAL, function() {
+				lines[2].stop().animate({ gra_e: 100 }, 200 * INTERVAL, function() {
 					lines[2].attr({ gra_e: 0 });
-					lines[3].animate({ gra_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
+					lines[3].stop().animate({ gra_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
 						lines[3].attr({ gra_s: 0 });
 						func();
 					});
 				});
 			} else {
-				lines[3].animate({ gra_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
+				lines[3].stop().animate({ gra_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
 					lines[3].attr({ gra_n: 0 });
-					lines[2].animate({ gra_w: 100 }, 200 * INTERVAL, function() {
+					lines[2].stop().animate({ gra_w: 100 }, 200 * INTERVAL, function() {
 						lines[2].attr({ gra_w: 0 });
 						func();
 					});
@@ -505,19 +515,20 @@ $(function() {
 			}
 		})();
 		(function() {
+			if(!running) return;
 			var func = arguments.callee;
 			if(horizontalFirst) {
-				lines[4].animate({ gra_w: 100 }, (WIDTH-260) * INTERVAL, function() {
+				lines[4].stop().animate({ gra_w: 100 }, (WIDTH-260) * INTERVAL, function() {
 					lines[4].attr({ gra_w: 0 });
-					lines[5].animate({ gra_n: 100 }, 160 * INTERVAL, function() {
+					lines[5].stop().animate({ gra_n: 100 }, 160 * INTERVAL, function() {
 						lines[5].attr({ gra_n: 0 });
 						func();
 					});
 				});
 			} else {
-				lines[5].animate({ gra_s: 100 }, 160 * INTERVAL, function() {
+				lines[5].stop().animate({ gra_s: 100 }, 160 * INTERVAL, function() {
 					lines[5].attr({ gra_s: 0 });
-					lines[4].animate({ gra_e: 100 }, (WIDTH-260) * INTERVAL, function() {
+					lines[4].stop().animate({ gra_e: 100 }, (WIDTH-260) * INTERVAL, function() {
 						lines[4].attr({ gra_e: 0 });
 						func();
 					});
@@ -525,45 +536,55 @@ $(function() {
 			}
 		})();
 		(function() {
+			if(!running) return;
 			var func = arguments.callee;
 			if(horizontalFirst) {
-				lines[6].animate({ gra_w: 100 }, (WIDTH-260) * INTERVAL, function() {
+				lines[6].stop().animate({ gra_w: 100 }, (WIDTH-260) * INTERVAL, function() {
 					lines[6].attr({ gra_w: 0 });
-					lines[7].animate({ gra_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
+					lines[7].stop().animate({ gra_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
 						lines[7].attr({ gra_s: 0 });
 						func();
 					});
 				});
 			} else {
-				lines[7].animate({ gra_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
+				lines[7].stop().animate({ gra_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
 					lines[7].attr({ gra_n: 0 });
-					lines[6].animate({ gra_e: 100 }, (WIDTH-260) * INTERVAL, function() {
+					lines[6].stop().animate({ gra_e: 100 }, (WIDTH-260) * INTERVAL, function() {
 						lines[6].attr({ gra_e: 0 });
 						func();
 					});
 				});
 			}
 		})();
+		return function() {
+			running = false;
+		};
 	};
 });
 
+function padLeft(num) {
+	if(num < 10) return "0" + num;
+	return num;
+}
+
 function formatDate(time) {
 	time = new Date(time);
-	return (time.getFullYear() + "-" + (time.getMonth() + 1) + "-" + time.getDate() + " " + time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds());
+	return (time.getFullYear() + "-" + padLeft(time.getMonth() + 1) + "-" + padLeft(time.getDate()) + " " +
+		padLeft(time.getHours()) + ":" + padLeft(time.getMinutes()) + ":" + padLeft(time.getSeconds()));
 }
 
 function formatTime(time) {
 	time = new Date(time);
-	return (time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds());
+	return (padLeft(time.getHours()) + ":" + padLeft(time.getMinutes()) + ":" + padLeft(time.getSeconds()));
 }
 		</script>
 	</head>
 	<body>
 		<div class="container">
 			<hr class="space"/><h1 class="quiet">北京轨道交通路网列车衔接模型</h1><hr class="bottom"/>
-			<h4 class="span-3 colborder menu"><a href="#">首班车衔接信息</a></h4>
-			<h4 class="span-3 colborder menu"><a href="#">末班车衔接信息</a></h4>
-			<h4 class="span-4 colborder menu"><a href="#">常规时间衔接信息</a></h4>
+			<h4 class="span-3 colborder menu"><a href="first.html">首班车衔接信息</a></h4>
+			<h4 class="span-3 colborder menu"><a href="last.html">末班车衔接信息</a></h4>
+			<h4 class="span-4 colborder menu"><a href="time.html">常规时间衔接信息</a></h4>
 			<h4 class="span-4 colborder menu"><a href="#">路径出行信息查询</a></h4>
 			<h4 class="span-3 colborder menu"><a href="#">换乘站服务水平</a></h4>
 			<h4 class="span-3 colborder menu"><a href="#">列车行车间隔</a></h4>
@@ -611,11 +632,11 @@ function formatTime(time) {
 								<th width="90px">换出/换入</th>
 								<th width="90px">到达车<br/>行车方向</th>
 								<th width="50px">到达车<br/>车次</th>
-								<th width="70px">到达车<br/>到达时刻</th>
+								<th width="80px">到达车<br/>到达时刻</th>
 								<th width="50px">换乘<br/>时间</th>
 								<th width="90px">换乘车<br/>行车方向</th>
 								<th width="50px">换乘车<br/>车次</th>
-								<th width="70px">换乘车<br/>发车时刻</th>
+								<th width="80px">换乘车<br/>发车时刻</th>
 								<th width="50px">等待<br/>时间</th>
 								<th width="50px">是否<br/>可达</th>
 							</tr>
