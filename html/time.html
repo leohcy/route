@@ -611,22 +611,6 @@ $(function() {
 	// 初始化相关元素
 	var WIDTH = 870, HEIGHT = $(window).height() - 168, INTERVAL = 5;
 	var paper = Raphael($(".station-view")[0], WIDTH, HEIGHT);
-	var gradient = function(dir) {
-		return function(num) {
-			if(num == 0 || num == 100)
-				return { fill: "#3B6188" };
-			if(num < 5)
-				return { fill: dir+"-#E9DF72-#3B6188:"+(num+5)+"-#3B6188" };
-			else if(num > 95)
-				return { fill: dir+"-#3B6188-#3B6188:"+(num-5)+"-#E9DF72" };
-			else
-				return { fill: dir+"-#3B6188-#3B6188:"+(num-5)+"-#E9DF72:"+num+"-#3B6188:"+(num+5)+"-#3B6188" };
-		};
-	};
-	paper.customAttributes.gra_e = gradient(0);
-	paper.customAttributes.gra_n = gradient(90);
-	paper.customAttributes.gra_w = gradient(180);
-	paper.customAttributes.gra_s = gradient(270);
 	var lines = [];
 	lines.push(paper.rect(0, 160, 200, 20).attr({ stroke: "none" }));
 	lines.push(paper.rect(200, 0, 20, 160).attr({ stroke: "none" }));
@@ -645,31 +629,51 @@ $(function() {
 		$(".station-view h3:last").text(verticalLineName).css({ top: HEIGHT-40, left: 100 });
 		horizontalColor.attr({ fill: horizontalLineColor });
 		verticalColor.attr({ fill: verticalLineColor });
-		lines[0].attr(horizontalFirst ? { gra_e: 0 } : { gra_w: 0 });
-		lines[1].attr(horizontalFirst ? { gra_n: 0 } : { gra_s: 0 });
-		lines[2].attr(horizontalFirst ? { gra_e: 0 } : { gra_w: 0 });
-		lines[3].attr(horizontalFirst ? { gra_s: 0 } : { gra_n: 0 });
-		lines[4].attr(horizontalFirst ? { gra_w: 0 } : { gra_e: 0 });
-		lines[5].attr(horizontalFirst ? { gra_n: 0 } : { gra_s: 0 });
-		lines[6].attr(horizontalFirst ? { gra_w: 0 } : { gra_e: 0 });
-		lines[7].attr(horizontalFirst ? { gra_s: 0 } : { gra_n: 0 });
+		var gradient = function(dir, offset, color) {
+			return function(num) {
+				if(num == 0 || num == 100)
+					return { fill: color };
+				if(num < offset)
+					return { fill: dir+"-#F5F98E-"+color+":"+(num+offset)+"-"+color };
+				else if(num > 100-offset)
+					return { fill: dir+"-"+color+"-"+color+":"+(num-offset)+"-#F5F98E" };
+				else
+					return { fill: dir+"-"+color+"-"+color+":"+(num-offset)+"-#F5F98E:"+num+"-"+color+":"+(num+offset)+"-"+color };
+			};
+		};
+		paper.customAttributes.gra_s_e = gradient(0, 15, horizontalLineColor);
+		paper.customAttributes.gra_l_e = gradient(0, 5, horizontalLineColor);
+		paper.customAttributes.gra_s_n = gradient(90, 15, verticalLineColor);
+		paper.customAttributes.gra_m_n = gradient(90, 10, verticalLineColor);
+		paper.customAttributes.gra_s_w = gradient(180, 15, horizontalLineColor);
+		paper.customAttributes.gra_l_w = gradient(180, 5, horizontalLineColor);
+		paper.customAttributes.gra_s_s = gradient(270, 15, verticalLineColor);
+		paper.customAttributes.gra_m_s = gradient(270, 10, verticalLineColor);
+		lines[0].attr(horizontalFirst ? { gra_s_e: 0 } : { gra_s_w: 0 });
+		lines[1].attr(horizontalFirst ? { gra_s_n: 0 } : { gra_s_s: 0 });
+		lines[2].attr(horizontalFirst ? { gra_s_e: 0 } : { gra_s_w: 0 });
+		lines[3].attr(horizontalFirst ? { gra_m_s: 0 } : { gra_m_n: 0 });
+		lines[4].attr(horizontalFirst ? { gra_l_w: 0 } : { gra_l_e: 0 });
+		lines[5].attr(horizontalFirst ? { gra_s_n: 0 } : { gra_s_s: 0 });
+		lines[6].attr(horizontalFirst ? { gra_l_w: 0 } : { gra_l_e: 0 });
+		lines[7].attr(horizontalFirst ? { gra_m_s: 0 } : { gra_m_n: 0 });
 		var running = true;
 		(function() {
 			if(!running) return;
 			var func = arguments.callee;
 			if(horizontalFirst) {
-				lines[0].stop().animate({ gra_e: 100 }, 200 * INTERVAL, function() {
-					lines[0].attr({ gra_e: 0 });
-					lines[1].stop().animate({ gra_n: 100 }, 160 * INTERVAL, function() {
-						lines[1].attr({ gra_n: 0 });
+				lines[0].stop().animate({ gra_s_e: 100 }, 200 * INTERVAL, function() {
+					lines[0].attr({ gra_s_e: 0 });
+					lines[1].stop().animate({ gra_s_n: 100 }, 160 * INTERVAL, function() {
+						lines[1].attr({ gra_s_n: 0 });
 						func();
 					});
 				});
 			} else {
-				lines[1].stop().animate({ gra_s: 100 }, 160 * INTERVAL, function() {
-					lines[1].attr({ gra_s: 0 });
-					lines[0].stop().animate({ gra_w: 100 }, 200 * INTERVAL, function() {
-						lines[0].attr({ gra_w: 0 });
+				lines[1].stop().animate({ gra_s_s: 100 }, 160 * INTERVAL, function() {
+					lines[1].attr({ gra_s_s: 0 });
+					lines[0].stop().animate({ gra_s_w: 100 }, 200 * INTERVAL, function() {
+						lines[0].attr({ gra_s_w: 0 });
 						func();
 					});
 				});
@@ -679,18 +683,18 @@ $(function() {
 			if(!running) return;
 			var func = arguments.callee;
 			if(horizontalFirst) {
-				lines[2].stop().animate({ gra_e: 100 }, 200 * INTERVAL, function() {
-					lines[2].attr({ gra_e: 0 });
-					lines[3].stop().animate({ gra_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
-						lines[3].attr({ gra_s: 0 });
+				lines[2].stop().animate({ gra_s_e: 100 }, 200 * INTERVAL, function() {
+					lines[2].attr({ gra_s_e: 0 });
+					lines[3].stop().animate({ gra_m_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
+						lines[3].attr({ gra_m_s: 0 });
 						func();
 					});
 				});
 			} else {
-				lines[3].stop().animate({ gra_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
-					lines[3].attr({ gra_n: 0 });
-					lines[2].stop().animate({ gra_w: 100 }, 200 * INTERVAL, function() {
-						lines[2].attr({ gra_w: 0 });
+				lines[3].stop().animate({ gra_m_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
+					lines[3].attr({ gra_m_n: 0 });
+					lines[2].stop().animate({ gra_s_w: 100 }, 200 * INTERVAL, function() {
+						lines[2].attr({ gra_s_w: 0 });
 						func();
 					});
 				});
@@ -700,18 +704,18 @@ $(function() {
 			if(!running) return;
 			var func = arguments.callee;
 			if(horizontalFirst) {
-				lines[4].stop().animate({ gra_w: 100 }, (WIDTH-260) * INTERVAL, function() {
-					lines[4].attr({ gra_w: 0 });
-					lines[5].stop().animate({ gra_n: 100 }, 160 * INTERVAL, function() {
-						lines[5].attr({ gra_n: 0 });
+				lines[4].stop().animate({ gra_l_w: 100 }, (WIDTH-260) * INTERVAL, function() {
+					lines[4].attr({ gra_l_w: 0 });
+					lines[5].stop().animate({ gra_s_n: 100 }, 160 * INTERVAL, function() {
+						lines[5].attr({ gra_s_n: 0 });
 						func();
 					});
 				});
 			} else {
-				lines[5].stop().animate({ gra_s: 100 }, 160 * INTERVAL, function() {
-					lines[5].attr({ gra_s: 0 });
-					lines[4].stop().animate({ gra_e: 100 }, (WIDTH-260) * INTERVAL, function() {
-						lines[4].attr({ gra_e: 0 });
+				lines[5].stop().animate({ gra_s_s: 100 }, 160 * INTERVAL, function() {
+					lines[5].attr({ gra_s_s: 0 });
+					lines[4].stop().animate({ gra_l_e: 100 }, (WIDTH-260) * INTERVAL, function() {
+						lines[4].attr({ gra_l_e: 0 });
 						func();
 					});
 				});
@@ -721,18 +725,18 @@ $(function() {
 			if(!running) return;
 			var func = arguments.callee;
 			if(horizontalFirst) {
-				lines[6].stop().animate({ gra_w: 100 }, (WIDTH-260) * INTERVAL, function() {
-					lines[6].attr({ gra_w: 0 });
-					lines[7].stop().animate({ gra_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
-						lines[7].attr({ gra_s: 0 });
+				lines[6].stop().animate({ gra_l_w: 100 }, (WIDTH-260) * INTERVAL, function() {
+					lines[6].attr({ gra_l_w: 0 });
+					lines[7].stop().animate({ gra_m_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
+						lines[7].attr({ gra_m_s: 0 });
 						func();
 					});
 				});
 			} else {
-				lines[7].stop().animate({ gra_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
-					lines[7].attr({ gra_n: 0 });
-					lines[6].stop().animate({ gra_e: 100 }, (WIDTH-260) * INTERVAL, function() {
-						lines[6].attr({ gra_e: 0 });
+				lines[7].stop().animate({ gra_m_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
+					lines[7].attr({ gra_m_n: 0 });
+					lines[6].stop().animate({ gra_l_e: 100 }, (WIDTH-260) * INTERVAL, function() {
+						lines[6].attr({ gra_l_e: 0 });
 						func();
 					});
 				});
