@@ -517,7 +517,7 @@ $(function() {
 	window.resetMap = function() {
 		img.stop(true).delay(200).animate({ width: defWidth, top: (defHeight - defWidth * WIDTH / HEIGHT) / 2, left: 0 }, "slow");
 	};
-	var WIDTH = 2082, HEIGHT = 1921;
+	var WIDTH = 1678, HEIGHT = 1435;
 	// 缩放按钮
 	$("#zoom-in-btn").click(function() {
 		var width = img.width() * 4 / 3 > WIDTH ? WIDTH - img.width() : img.width() / 3;
@@ -815,7 +815,7 @@ function formatTime(time) {
 			</div>
 			<div class="span-22 last">
 				<div class="overview">
-					<img src="resources/images/overview.png" />
+					<img src="resources/images/overview.jpg" />
 					<button id="zoom-in-btn" style="top:80px; left:35px;">+</button>
 					<button id="move-north-btn" style="top:122px; left:35px;">↑</button>
 					<button id="move-south-btn" style="top:186px; left:35px;">↓</button>
