@@ -515,7 +515,7 @@ $(function() {
 		img.css("top", (defHeight - img.height()) / 2);
 	});
 	window.resetMap = function() {
-		img.stop(true).delay(200).animate({ width: defWidth, top: (defHeight - defWidth * WIDTH / HEIGHT) / 2, left: 0 }, "slow");
+		img.stop(true).delay(200).animate({ width: defWidth, top: (defHeight - defWidth * HEIGHT / WIDTH) / 2, left: 0 }, "slow");
 	};
 	var WIDTH = 1678, HEIGHT = 1435;
 	// 缩放按钮
@@ -649,14 +649,14 @@ $(function() {
 		paper.customAttributes.gra_l_w = gradient(180, 5, horizontalLineColor);
 		paper.customAttributes.gra_s_s = gradient(270, 15, verticalLineColor);
 		paper.customAttributes.gra_m_s = gradient(270, 10, verticalLineColor);
-		lines[0].attr(horizontalFirst ? { gra_s_e: 0 } : { gra_s_w: 0 });
-		lines[1].attr(horizontalFirst ? { gra_s_n: 0 } : { gra_s_s: 0 });
-		lines[2].attr(horizontalFirst ? { gra_s_e: 0 } : { gra_s_w: 0 });
-		lines[3].attr(horizontalFirst ? { gra_m_s: 0 } : { gra_m_n: 0 });
-		lines[4].attr(horizontalFirst ? { gra_l_w: 0 } : { gra_l_e: 0 });
-		lines[5].attr(horizontalFirst ? { gra_s_n: 0 } : { gra_s_s: 0 });
-		lines[6].attr(horizontalFirst ? { gra_l_w: 0 } : { gra_l_e: 0 });
-		lines[7].attr(horizontalFirst ? { gra_m_s: 0 } : { gra_m_n: 0 });
+		lines[0].stop().attr(horizontalFirst ? { gra_s_e: 0 } : { gra_s_w: 0 });
+		lines[1].stop().attr(horizontalFirst ? { gra_s_n: 0 } : { gra_s_s: 0 });
+		lines[2].stop().attr(horizontalFirst ? { gra_s_e: 0 } : { gra_s_w: 0 });
+		lines[3].stop().attr(horizontalFirst ? { gra_m_s: 0 } : { gra_m_n: 0 });
+		lines[4].stop().attr(horizontalFirst ? { gra_l_w: 0 } : { gra_l_e: 0 });
+		lines[5].stop().attr(horizontalFirst ? { gra_s_n: 0 } : { gra_s_s: 0 });
+		lines[6].stop().attr(horizontalFirst ? { gra_l_w: 0 } : { gra_l_e: 0 });
+		lines[7].stop().attr(horizontalFirst ? { gra_m_s: 0 } : { gra_m_n: 0 });
 		var running = true;
 		(function() {
 			if(!running) return;
