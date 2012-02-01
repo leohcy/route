@@ -1,3 +1,4 @@
+<%@page import="java.util.Calendar"%>
 <%@page import="java.util.HashMap"%>
 <%@page import="com.google.gson.Gson"%>
 <%@page import="java.util.List"%>
@@ -13,7 +14,10 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <%
-	long walkTime = 2 * 60;
+	Calendar cal = Calendar.getInstance();
+	int hour = cal.get(Calendar.HOUR_OF_DAY);
+	int min = cal.get(Calendar.MINUTE);
+	int curTime = hour * 100 + min;
 
 	NetworkFactory networkFactory = (NetworkFactory)request.getAttribute("networkFactory");
 	TrainWorkingDiagramFactory trainWorkingDiagramFactory = (TrainWorkingDiagramFactory)request.getAttribute("trainWorkingDiagramFactory");
@@ -36,9 +40,11 @@
 	for (int dirId : dirIds) {
 		Map<String, Object> dir = new HashMap<String, Object>();
 		dir.put("routeId", dirId);
-		dir.put("walkTime", walkTime);
 		
 		InterchangeDirection direction = directions.get(dirId);
+		int walkTime = direction.getWalkTime(curTime);
+		dir.put("walkTime", walkTime);
+		
 		Line from = direction.getFrom();
 		Line to = direction.getTo();
 		

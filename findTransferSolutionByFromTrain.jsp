@@ -1,3 +1,4 @@
+<%@page import="java.util.Calendar"%>
 <%@page import="com.google.gson.Gson"%>
 <%@page import="java.util.HashMap"%>
 <%@page import="java.util.ArrayList"%>
@@ -13,8 +14,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <%
-	long walkTime = 2 * 60;
-
+	Calendar cal = Calendar.getInstance();
+	int hour = cal.get(Calendar.HOUR_OF_DAY);
+	int min = cal.get(Calendar.MINUTE);
+	int curTime = hour * 100 + min;
+	
 	NetworkFactory networkFactory = (NetworkFactory)request.getAttribute("networkFactory");
 	TrainWorkingDiagramFactory trainWorkingDiagramFactory = (TrainWorkingDiagramFactory)request.getAttribute("trainWorkingDiagramFactory");
 	
@@ -40,6 +44,8 @@
 		InterchangeDirection direction = directions.get(dirId);
 		Line from = direction.getFrom();
 		Line to = direction.getTo();
+		
+		int walkTime = direction.getWalkTime(curTime);
 		
 		Timetable fromTable = trainWorkingDiagramFactory.getTimetableByLine(from);
 		TrainTime fromTrain = fromTable.getTrainOfStationByTrainId(station.getId(), fromTrainId);

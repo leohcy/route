@@ -40,9 +40,9 @@
 	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
 		destroy-method="close">
 		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
-		<property name="url" value="jdbc:mysql://192.168.111.62:3306/hechy?useUnicode=true&amp;characterEncoding=UTF-8" />
-		<property name="username" value="root" />
-		<property name="password" value="bjneusoft" />
+		<property name="url" value="jdbc:mysql://localhost:3306/route?useUnicode=true&amp;characterEncoding=UTF-8" />
+		<property name="username" value="route" />
+		<property name="password" value="123456" />
 	</bean>
 	
 	<!-- 声明式事物 -->

@@ -18,7 +18,7 @@
         <priority value="error" />  
     </category>  
     <root>  
-        <priority value ="info" />  
+        <priority value ="error" />  
         <appender-ref ref="STDOUT" />  
     </root>  
       
