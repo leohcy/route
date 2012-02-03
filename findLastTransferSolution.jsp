@@ -74,7 +74,7 @@
 		}
 
 		List<TrainTime> toTrainTimes = toTable.getTrainOfStationAfter(station.getId(), departureTimePoint, maxCount);
-		if (toTrainTimes == null) {
+		if (toTrainTimes == null || toTrainTimes.size() == 0) {
 			interchangeInfo.put("toTrain", null);
 			interchangeInfo.put("waitTime", null);
 			

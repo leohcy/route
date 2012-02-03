@@ -24,7 +24,7 @@
 .station-view { position:relative; }
 .station-view h2 { position:absolute; top:165px; left:195px; color:#FFF; }
 .station-view h3 { position:absolute; color:#FFF; }
-.station-view table { position:absolute; top:400px; right:0px; width:650px; border-top:1px solid #888; border-left:1px solid #888; }
+.station-view table { position:absolute; top:400px; right:0px; width:670px; border-top:1px solid #888; border-left:1px solid #888; }
 .station-view th, .station-view td { border-bottom:1px solid #888; border-right:1px solid #888; }
 .station-view .tooltip { position:absolute; width:160px; height:120px; padding:5px; background-color:#a4a4a4;
 	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #6fc; }
@@ -176,42 +176,75 @@ $(function() {
 						var routes = [];
 						$.each(result, function() {
 							var route = _availableRoutes[this.routeId];
-							var tr = "<tr>";
-							tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"-"+route.toLine.lineName+"</td>";
-							tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
-							tr += "<td>"+train+"</td>";
-							tr += "<td>"+formatTime(arrival)+"</td>";
-							tr += "<td>"+Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒"+"</td>";
-							tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
-							if(this.toTrain) {
-								tr += "<td>"+this.toTrain.trainId+"</td>";
-								tr += "<td>"+formatTime(this.toTrain.departureTime)+"</td>";
-								tr += "<td>"+Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒"+"</td>";
-								tr += "<td>可达</td>";
+							if(this.toTrain && this.toTrain.length > 0) {
+								var me = this;
+								$.each(this.toTrain, function() {
+									var tr = "<tr>";
+									tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"-"+route.toLine.lineName+"</td>";
+									tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
+									tr += "<td>"+train+"</td>";
+									tr += "<td>"+formatTime(arrival)+"</td>";
+									tr += "<td>"+Math.floor(me.walkTime/60)+"分"+(me.walkTime%60)+"秒"+"</td>";
+									tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
+									tr += "<td>"+this.trainId+"</td>";
+									tr += "<td>"+formatTime(this.departureTime)+"</td>";
+									tr += "<td>"+Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒"+"</td>";
+									tr += "<td>可达</td>";
+									tr += "</tr>";
+									routes.push([route.fromLine.lineId, route.toLine.lineId, route.fromLine.lineDir, route.toLine.lineDir, this.departureTime, $(tr)]);
+								});
 							} else {
+								var tr = "<tr>";
+								tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"-"+route.toLine.lineName+"</td>";
+								tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
+								tr += "<td>"+train+"</td>";
+								tr += "<td>"+formatTime(arrival)+"</td>";
+								tr += "<td>"+Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒"+"</td>";
+								tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
 								tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
 								tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
 								tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
 								tr += "<td style='background-color:#BFBFBF'>不可达</td>";
+								tr += "</tr>";
+								routes.push([route.fromLine.lineId, route.toLine.lineId, route.fromLine.lineDir, route.toLine.lineDir, -1, $(tr)]);
 							}
-							tr += "</tr>";
-							routes.push([route.fromLine.lineId, route.toLine.lineId, route.fromLine.lineDir, route.toLine.lineDir, $(tr)]);
 						});
 						routes.sort(function(a, b) {
-							return (a[0] - b[0] != 0)?(a[0] - b[0]):((a[1] - b[1] != 0)?(a[1] - b[1]):((a[2] - b[2] != 0)?(a[2] - b[2]):((a[3] - b[3] != 0)?(a[3] - b[3]):0)));
+							return (a[0] - b[0] != 0)?(a[0] - b[0]):((a[1] - b[1] != 0)?(a[1] - b[1]):((a[2] - b[2] != 0)?(a[2] - b[2]):((a[3] - b[3] != 0)?(a[3] - b[3]):((a[4] - b[4] != 0)?(a[4] - b[4]):0))));
 						});
-						for(var i = 1; i < routes.length; i++) {
-							var up = routes[i-1][4], down = routes[i][4];
-							if(up.children(":eq(1)").attr("rel") == down.children(":eq(1)").attr("rel")) {
-								up.children(":eq(1),:eq(2),:eq(3)").attr("rowspan", 2);
-								down.children(":eq(1),:eq(2),:eq(3)").remove();
-								i++;
+						for(var i = 0; i < routes.length; i++) {
+							var up = routes[i][5], j = i + 1;
+							while(j < routes.length) {
+								var down = routes[j][5];
+								if(up.children(":eq(5)").attr("rel") != down.children(":eq(5)").attr("rel") ||
+										up.children(":eq(1)").attr("rel") != down.children(":eq(1)").attr("rel"))
+									break;
+								down.children(":eq(4),:eq(5)").remove();
+								j++;
+							}
+							if(j - i > 1) {
+								up.children(":eq(4),:eq(5)").attr("rowspan", j - i);
+								i += (j - i - 1);
 							}
 						}
 						for(var i = 0; i < routes.length; i++) {
-							var up = routes[i][4], j = i + 1;
+							var up = routes[i][5], j = i + 1;
 							while(j < routes.length) {
-								var down = routes[j][4];
+								var down = routes[j][5];
+								if(up.children(":eq(1)").attr("rel") != down.children(":eq(1)").attr("rel"))
+									break;
+								down.children(":eq(1),:eq(2),:eq(3)").remove();
+								j++;
+							}
+							if(j - i > 1) {
+								up.children(":eq(1),:eq(2),:eq(3)").attr("rowspan", j - i);
+								i += (j - i - 1);
+							}
+						}
+						for(var i = 0; i < routes.length; i++) {
+							var up = routes[i][5], j = i + 1;
+							while(j < routes.length) {
+								var down = routes[j][5];
 								if(up.children(":eq(0)").attr("rel") != down.children(":eq(0)").attr("rel"))
 									break;
 								down.children(":eq(0)").remove();
@@ -224,7 +257,7 @@ $(function() {
 						}
 						var tbody = $(".station-view tbody").empty();
 						$.each(routes, function() {
-							tbody.append(this[4]);
+							tbody.append(this[5]);
 						});
 						
 						var fromDir = _linesDirInStation[stationId][from];
@@ -246,6 +279,8 @@ $(function() {
 							quadrant = [ [2,1], [1,1], [1,2], [2,2] ];
 						else if(fromDir == "SN" && toDir == "EW")
 							quadrant = [ [1,2], [1,1], [2,1], [2,2] ];
+						else
+							quadrant = [ [2,2], [1,2], [1,1], [2,1] ];
 						routes = {};
 						for(var i = 0; i < quadrant.length; i++) {
 							$.each(_availableRoutes, function(routeId) {
@@ -262,10 +297,10 @@ $(function() {
 							if(this.toTrain) {
 								tooltip.find(".from-train-id").text(train);
 								tooltip.find(".from-arrival-time").text(formatTime(arrival));
-								tooltip.find(".to-train-id").text(this.toTrain.trainId);
-								tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
+								tooltip.find(".to-train-id").text(this.toTrain[0].trainId);
+								tooltip.find(".from-departure-time").text(formatTime(this.toTrain[0].departureTime));
 								tooltip.find(".walk-time").text(Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒");
-								tooltip.find(".wait-time").text(Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒");
+								tooltip.find(".wait-time").text(Math.floor(this.toTrain[0].waitTime/60)+"分"+(this.toTrain[0].waitTime%60)+"秒");
 								tooltip.find(".yesno").hide();
 								tooltip.show();
 							}
@@ -315,42 +350,75 @@ $(function() {
 			var routes = [];
 			$.each(result.lastest, function() {
 				var route = _availableRoutes[this.routeId];
-				var tr = "<tr>";
-				tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"-"+route.toLine.lineName+"</td>";
-				tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
-				tr += "<td>"+this.fromTrain.trainId+"</td>";
-				tr += "<td>"+formatTime(this.fromTrain.arrivalTime)+"</td>";
-				tr += "<td>"+Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒"+"</td>";
-				tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
-				if(this.toTrain) {
-					tr += "<td>"+this.toTrain.trainId+"</td>";
-					tr += "<td>"+formatTime(this.toTrain.departureTime)+"</td>";
-					tr += "<td>"+Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒"+"</td>";
-					tr += "<td>可达</td>";
+				if(this.toTrain && this.toTrain.length > 0) {
+					var me = this;
+					$.each(this.toTrain, function() {
+						var tr = "<tr>";
+						tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"-"+route.toLine.lineName+"</td>";
+						tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
+						tr += "<td>"+me.fromTrain.trainId+"</td>";
+						tr += "<td>"+formatTime(me.fromTrain.arrivalTime)+"</td>";
+						tr += "<td>"+Math.floor(me.walkTime/60)+"分"+(me.walkTime%60)+"秒"+"</td>";
+						tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
+						tr += "<td>"+this.trainId+"</td>";
+						tr += "<td>"+formatTime(this.departureTime)+"</td>";
+						tr += "<td>"+Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒"+"</td>";
+						tr += "<td>可达</td>";
+						tr += "</tr>";
+						routes.push([route.fromLine.lineId, route.toLine.lineId, route.fromLine.lineDir, route.toLine.lineDir, this.departureTime, $(tr)]);
+					});
 				} else {
+					var tr = "<tr>";
+					tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"-"+route.toLine.lineName+"</td>";
+					tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
+					tr += "<td>"+this.fromTrain.trainId+"</td>";
+					tr += "<td>"+formatTime(this.fromTrain.arrivalTime)+"</td>";
+					tr += "<td>"+Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒"+"</td>";
+					tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
 					tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
 					tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
 					tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
 					tr += "<td style='background-color:#BFBFBF'>不可达</td>";
+					tr += "</tr>";
+					routes.push([route.fromLine.lineId, route.toLine.lineId, route.fromLine.lineDir, route.toLine.lineDir, -1, $(tr)]);
 				}
-				tr += "</tr>";
-				routes.push([route.fromLine.lineId, route.toLine.lineId, route.fromLine.lineDir, route.toLine.lineDir, $(tr)]);
 			});
 			routes.sort(function(a, b) {
-				return (a[0] - b[0] != 0)?(a[0] - b[0]):((a[1] - b[1] != 0)?(a[1] - b[1]):((a[2] - b[2] != 0)?(a[2] - b[2]):((a[3] - b[3] != 0)?(a[3] - b[3]):0)));
+				return (a[0] - b[0] != 0)?(a[0] - b[0]):((a[1] - b[1] != 0)?(a[1] - b[1]):((a[2] - b[2] != 0)?(a[2] - b[2]):((a[3] - b[3] != 0)?(a[3] - b[3]):((a[4] - b[4] != 0)?(a[4] - b[4]):0))));
 			});
-			for(var i = 1; i < routes.length; i++) {
-				var up = routes[i-1][4], down = routes[i][4];
-				if(up.children(":eq(1)").attr("rel") == down.children(":eq(1)").attr("rel")) {
-					up.children(":eq(1),:eq(2),:eq(3)").attr("rowspan", 2);
-					down.children(":eq(1),:eq(2),:eq(3)").remove();
-					i++;
+			for(var i = 0; i < routes.length; i++) {
+				var up = routes[i][5], j = i + 1;
+				while(j < routes.length) {
+					var down = routes[j][5];
+					if(up.children(":eq(5)").attr("rel") != down.children(":eq(5)").attr("rel") ||
+							up.children(":eq(1)").attr("rel") != down.children(":eq(1)").attr("rel"))
+						break;
+					down.children(":eq(4),:eq(5)").remove();
+					j++;
+				}
+				if(j - i > 1) {
+					up.children(":eq(4),:eq(5)").attr("rowspan", j - i);
+					i += (j - i - 1);
 				}
 			}
 			for(var i = 0; i < routes.length; i++) {
-				var up = routes[i][4], j = i + 1;
+				var up = routes[i][5], j = i + 1;
 				while(j < routes.length) {
-					var down = routes[j][4];
+					var down = routes[j][5];
+					if(up.children(":eq(1)").attr("rel") != down.children(":eq(1)").attr("rel"))
+						break;
+					down.children(":eq(1),:eq(2),:eq(3)").remove();
+					j++;
+				}
+				if(j - i > 1) {
+					up.children(":eq(1),:eq(2),:eq(3)").attr("rowspan", j - i);
+					i += (j - i - 1);
+				}
+			}
+			for(var i = 0; i < routes.length; i++) {
+				var up = routes[i][5], j = i + 1;
+				while(j < routes.length) {
+					var down = routes[j][5];
 					if(up.children(":eq(0)").attr("rel") != down.children(":eq(0)").attr("rel"))
 						break;
 					down.children(":eq(0)").remove();
@@ -363,7 +431,7 @@ $(function() {
 			}
 			var tbody = $(".station-view tbody").empty();
 			$.each(routes, function() {
-				tbody.append(this[4]);
+				tbody.append(this[5]);
 			});
 			if(result.reachable && result.reachable.length > 0) {
 				tbody.append("<tr><td colspan='10' style='color:#F00; font-size:18px; font-weight:bold; " +
@@ -378,9 +446,9 @@ $(function() {
 					tr += "<td>"+formatTime(this.fromTrain.arrivalTime)+"</td>";
 					tr += "<td>"+Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒"+"</td>";
 					tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
-					tr += "<td>"+this.toTrain.trainId+"</td>";
-					tr += "<td>"+formatTime(this.toTrain.departureTime)+"</td>";
-					tr += "<td>"+Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒"+"</td>";
+					tr += "<td>"+this.toTrain[0].trainId+"</td>";
+					tr += "<td>"+formatTime(this.toTrain[0].departureTime)+"</td>";
+					tr += "<td>"+Math.floor(this.toTrain[0].waitTime/60)+"分"+(this.toTrain[0].waitTime%60)+"秒"+"</td>";
 					tr += "<td>可达</td>";
 					tr += "</tr>";
 					routes.push([route.fromLine.lineId, route.toLine.lineId, route.fromLine.lineDir, route.toLine.lineDir, $(tr)]);
@@ -434,6 +502,8 @@ $(function() {
 				quadrant = [ [2,1], [1,1], [1,2], [2,2] ];
 			else if(fromDir == "SN" && toDir == "EW")
 				quadrant = [ [1,2], [1,1], [2,1], [2,2] ];
+			else
+				quadrant = [ [2,2], [1,2], [1,1], [2,1] ];
 			routes = {};
 			for(var i = 0; i < quadrant.length; i++) {
 				$.each(_availableRoutes, function(routeId) {
@@ -447,13 +517,13 @@ $(function() {
 			$.each(result.lastest, function() {
 				if(typeof routes[this.routeId] == "undefined") return;
 				var tooltip = tooltips.eq(routes[this.routeId]);
-				if(this.toTrain) {
+				if(this.toTrain && this.toTrain.length > 0) {
 					tooltip.find(".from-train-id").text(this.fromTrain.trainId);
 					tooltip.find(".from-arrival-time").text(formatTime(this.fromTrain.arrivalTime));
-					tooltip.find(".to-train-id").text(this.toTrain.trainId);
-					tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
+					tooltip.find(".to-train-id").text(this.toTrain[0].trainId);
+					tooltip.find(".from-departure-time").text(formatTime(this.toTrain[0].departureTime));
 					tooltip.find(".walk-time").text(Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒");
-					tooltip.find(".wait-time").text(Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒");
+					tooltip.find(".wait-time").text(Math.floor(this.toTrain[0].waitTime/60)+"分"+(this.toTrain[0].waitTime%60)+"秒");
 					tooltip.find(".yesno").hide();
 				} else {
 					var routeId = this.routeId;
@@ -461,10 +531,10 @@ $(function() {
 						if(this.routeId == routeId) {
 							tooltip.find(".from-train-id").text(this.fromTrain.trainId);
 							tooltip.find(".from-arrival-time").text(formatTime(this.fromTrain.arrivalTime));
-							tooltip.find(".to-train-id").text(this.toTrain.trainId);
-							tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
+							tooltip.find(".to-train-id").text(this.toTrain[0].trainId);
+							tooltip.find(".from-departure-time").text(formatTime(this.toTrain[0].departureTime));
 							tooltip.find(".walk-time").text(Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒");
-							tooltip.find(".wait-time").text(Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒");
+							tooltip.find(".wait-time").text(Math.floor(this.toTrain[0].waitTime/60)+"分"+(this.toTrain[0].waitTime%60)+"秒");
 							tooltip.find(".yesno").show();
 							return false;
 						}
@@ -835,11 +905,11 @@ function formatTime(time) {
 								<th width="100px">到达车<br/>行车方向</th>
 								<th width="40px">到达车<br/>车次</th>
 								<th width="60px">到达车<br/>到达时刻</th>
-								<th width="50px">换乘<br/>时间</th>
+								<th width="60px">换乘<br/>时间</th>
 								<th width="100px">换乘车<br/>行车方向</th>
 								<th width="40px">换乘车<br/>车次</th>
 								<th width="60px">换乘车<br/>发车时刻</th>
-								<th width="50px">等待<br/>时间</th>
+								<th width="60px">等待<br/>时间</th>
 								<th width="50px">是否<br/>可达</th>
 							</tr>
 						</thead>

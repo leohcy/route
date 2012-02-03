@@ -57,7 +57,7 @@
 		Timetable toTable = trainWorkingDiagramFactory.getTimetableByLine(to);
 		
 		List<TrainTime> fromTrains = fromTable.getTrainOfStationAfter(station.getId(), time, 1);
-		if (fromTrains == null) {//指定的时间没有换出列车
+		if (fromTrains == null || fromTrains.size() == 0) {//指定的时间没有换出列车
 			TrainTime fromTrain = fromTable.getLastTrainOfStation(station.getId());
 			long arrivalTime = fromTrain.getArrivalTime();
 			
@@ -101,7 +101,7 @@
 			long departureTimepoint = arrivalTime + walkTime * 1000;
 			
 			List<TrainTime> toTrains = toTable.getTrainOfStationAfter(station.getId(), departureTimepoint, maxCount);
-			if (toTrains == null) {//没有换入路线
+			if (toTrains == null || toTrains.size() == 0) {//没有换入路线
 				TrainTime toTrain = toTable.getLastTrainOfStation(station.getId());
 				long departureTime = toTrain.getDepartureTime();
 				long arrivalTimeponit = departureTime - walkTime * 1000;
