@@ -14,6 +14,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <%
+	int maxCount = 3;
+
 	Calendar cal = Calendar.getInstance();
 	int hour = cal.get(Calendar.HOUR_OF_DAY);
 	int min = cal.get(Calendar.MINUTE);
@@ -54,19 +56,22 @@
 		Timetable fromTable = trainWorkingDiagramFactory.getTimetableByLine(from);
 		Timetable toTable = trainWorkingDiagramFactory.getTimetableByLine(to);
 		
-		TrainTime fromTrain = fromTable.getTrainOfStationAfter(station.getId(), time);
-		if (fromTrain == null) {//指定的时间没有换出列车
-			fromTrain = fromTable.getLastTrainOfStation(station.getId());
+		List<TrainTime> fromTrains = fromTable.getTrainOfStationAfter(station.getId(), time, 1);
+		if (fromTrains == null) {//指定的时间没有换出列车
+			TrainTime fromTrain = fromTable.getLastTrainOfStation(station.getId());
 			long arrivalTime = fromTrain.getArrivalTime();
 			
 			long departureTimepoint = arrivalTime + walkTime * 1000;
 			
-			TrainTime toTrain = toTable.getTrainOfStationAfter(station.getId(), departureTimepoint);
-			if (toTrain == null) {//没有换入路线
-				toTrain = toTable.getLastTrainOfStation(station.getId());
+			List<TrainTime> toTrains = toTable.getTrainOfStationAfter(station.getId(), departureTimepoint, maxCount);
+			if (toTrains == null) {//没有换入路线
+				TrainTime toTrain = toTable.getLastTrainOfStation(station.getId());
 				long departureTime = toTrain.getDepartureTime();
 				long arrivalTimeponit = departureTime - walkTime * 1000;
 				fromTrain = fromTable.getTrainOfStationBefore(station.getId(), arrivalTimeponit);
+				
+				toTrains = new ArrayList<TrainTime>();
+				toTrains.add(toTrain);
 			}
 			
 			Map<String, Object> fromTrainInfo = new HashMap<String, Object>();
@@ -75,23 +80,29 @@
 			fromTrainInfo.put("departureTime", fromTrain.getDepartureTime());
 			interchangeInfo.put("fromTrain", fromTrainInfo);
 			
-			Map<String, Object> toTrainInfo = new HashMap<String, Object>();
-			toTrainInfo.put("trainId", toTrain.getTrainId());
-			toTrainInfo.put("arrivalTime", toTrain.getArrivalTime());
-			toTrainInfo.put("departureTime", toTrain.getDepartureTime());
-			interchangeInfo.put("toTrain", toTrainInfo);
-			
-			interchangeInfo.put("waitTime", (toTrain.getDepartureTime() - fromTrain.getArrivalTime() - walkTime * 1000) / 1000);
+			List<Map<String, Object>> toTrainInfos = new ArrayList<Map<String, Object>>();
+			for (TrainTime toTrain : toTrains) {
+				Map<String, Object> toTrainInfo = new HashMap<String, Object>();
+				toTrainInfo.put("trainId", toTrain.getTrainId());
+				toTrainInfo.put("arrivalTime", toTrain.getArrivalTime());
+				toTrainInfo.put("departureTime", toTrain.getDepartureTime());
+				
+				toTrainInfo.put("waitTime", (toTrain.getDepartureTime() - fromTrain.getArrivalTime() - walkTime * 1000) / 1000);
+				
+				toTrainInfos.add(toTrainInfo);
+			}
+			interchangeInfo.put("toTrain", toTrainInfos);
 			
 			reachable.add(interchangeInfo);
 		} else {
+			TrainTime fromTrain = fromTrains.get(0);
 			long arrivalTime = fromTrain.getArrivalTime();
 			
 			long departureTimepoint = arrivalTime + walkTime * 1000;
 			
-			TrainTime toTrain = toTable.getTrainOfStationAfter(station.getId(), departureTimepoint);
-			if (toTrain == null) {//没有换入路线
-				toTrain = toTable.getLastTrainOfStation(station.getId());
+			List<TrainTime> toTrains = toTable.getTrainOfStationAfter(station.getId(), departureTimepoint, maxCount);
+			if (toTrains == null) {//没有换入路线
+				TrainTime toTrain = toTable.getLastTrainOfStation(station.getId());
 				long departureTime = toTrain.getDepartureTime();
 				long arrivalTimeponit = departureTime - walkTime * 1000;
 				fromTrain = fromTable.getTrainOfStationBefore(station.getId(), arrivalTimeponit);
@@ -106,9 +117,12 @@
 				toTrainInfo.put("trainId", toTrain.getTrainId());
 				toTrainInfo.put("arrivalTime", toTrain.getArrivalTime());
 				toTrainInfo.put("departureTime", toTrain.getDepartureTime());
-				interchangeInfo.put("toTrain", toTrainInfo);
+				toTrainInfo.put("waitTime", (toTrain.getDepartureTime() - fromTrain.getArrivalTime() - walkTime * 1000) / 1000);
 				
-				interchangeInfo.put("waitTime", (toTrain.getDepartureTime() - fromTrain.getArrivalTime() - walkTime * 1000) / 1000);
+				List<Map<String, Object>> toTrainInfos = new ArrayList<Map<String, Object>>();
+				toTrainInfos.add(toTrainInfo);
+				
+				interchangeInfo.put("toTrain", toTrainInfos);
 				
 				reachable.add(interchangeInfo);
 				//写入可用reachable	
@@ -119,13 +133,17 @@
 				fromTrainInfo.put("departureTime", fromTrain.getDepartureTime());
 				interchangeInfo.put("fromTrain", fromTrainInfo);
 				
-				Map<String, Object> toTrainInfo = new HashMap<String, Object>();
-				toTrainInfo.put("trainId", toTrain.getTrainId());
-				toTrainInfo.put("arrivalTime", toTrain.getArrivalTime());
-				toTrainInfo.put("departureTime", toTrain.getDepartureTime());
-				interchangeInfo.put("toTrain", toTrainInfo);
-				
-				interchangeInfo.put("waitTime", (toTrain.getDepartureTime() - fromTrain.getArrivalTime() - walkTime * 1000) / 1000);
+				List<Map<String, Object>> toTrainInfos = new ArrayList<Map<String, Object>>();
+				for (TrainTime toTrain : toTrains) {
+					Map<String, Object> toTrainInfo = new HashMap<String, Object>();
+					toTrainInfo.put("trainId", toTrain.getTrainId());
+					toTrainInfo.put("arrivalTime", toTrain.getArrivalTime());
+					toTrainInfo.put("departureTime", toTrain.getDepartureTime());
+					toTrainInfo.put("waitTime", (toTrain.getDepartureTime() - fromTrain.getArrivalTime() - walkTime * 1000) / 1000);
+					
+					toTrainInfos.add(toTrainInfo);
+				}
+				interchangeInfo.put("toTrain", toTrainInfos);
 				
 				lastest.add(interchangeInfo);
 				//写入lastest

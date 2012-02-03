@@ -14,6 +14,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <%
+	int maxCount = 3;
+
 	Calendar cal = Calendar.getInstance();
 	int hour = cal.get(Calendar.HOUR_OF_DAY);
 	int min = cal.get(Calendar.MINUTE);
@@ -56,15 +58,19 @@
 		long timepoint = fromTrain.getArrivalTime() + walkTime * 1000;
 		
 		Timetable toTable = trainWorkingDiagramFactory.getTimetableByLine(to);
-		TrainTime toTrain = toTable.getTrainOfStationAfter(station.getId(), timepoint);
-		if (toTrain != null) {
-			Map<String, Object> toTrainInfo = new HashMap<String, Object>();
-			toTrainInfo.put("trainId", toTrain.getTrainId());
-			toTrainInfo.put("arrivalTime", toTrain.getArrivalTime());
-			toTrainInfo.put("departureTime", toTrain.getDepartureTime());
-			interchangeInfo.put("toTrain", toTrainInfo);
-			
-			interchangeInfo.put("waitTime", (toTrain.getDepartureTime() - fromTrain.getArrivalTime() - walkTime * 1000) / 1000);
+		List<TrainTime> toTrains = toTable.getTrainOfStationAfter(station.getId(), timepoint, maxCount);
+		if (toTrains != null) {
+			List<Map<String, Object>> toTrainInfos = new ArrayList<Map<String, Object>>();
+			for (TrainTime toTrain : toTrains) {
+				Map<String, Object> toTrainInfo = new HashMap<String, Object>();
+				toTrainInfo.put("trainId", toTrain.getTrainId());
+				toTrainInfo.put("arrivalTime", toTrain.getArrivalTime());
+				toTrainInfo.put("departureTime", toTrain.getDepartureTime());
+				toTrainInfo.put("waitTime", (toTrain.getDepartureTime() - fromTrain.getArrivalTime() - walkTime * 1000) / 1000);
+				
+				toTrainInfos.add(toTrainInfo);
+			}
+			interchangeInfo.put("toTrain", toTrainInfos);
 		}
 		
 		retval.add(interchangeInfo);

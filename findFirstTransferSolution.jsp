@@ -14,6 +14,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <%
+	int maxCount = 3;
+
 	Calendar cal = Calendar.getInstance();
 	int hour = cal.get(Calendar.HOUR_OF_DAY);
 	int min = cal.get(Calendar.MINUTE);
@@ -62,16 +64,23 @@
 		long departureTimePoint = arrivalTime + walkTime * 1000;
 		
 		Timetable toTable = trainWorkingDiagramFactory.getTimetableByLine(to);
-		TrainTime toTrainTime = toTable.getTrainOfStationAfter(station.getId(), departureTimePoint);
+		List<TrainTime> toTrainTimes = toTable.getTrainOfStationAfter(station.getId(), departureTimePoint, maxCount);
 		
-		Map<String, Object> toTrain = new HashMap<String, Object>();
-		toTrain.put("trainId", toTrainTime.getTrainId());
-		toTrain.put("arrivalTime", toTrainTime.getArrivalTime());
-		toTrain.put("departureTime", toTrainTime.getDepartureTime());
+		List<Map<String, Object>> toTrains = new ArrayList<Map<String, Object>>();
+		for (TrainTime toTrainTime : toTrainTimes) {
+			Map<String, Object> toTrain = new HashMap<String, Object>();
+			toTrain.put("trainId", toTrainTime.getTrainId());
+			toTrain.put("arrivalTime", toTrainTime.getArrivalTime());
+			toTrain.put("departureTime", toTrainTime.getDepartureTime());
+			
+			toTrain.put("waitTime", (toTrainTime.getDepartureTime() - fromTrainTime.getArrivalTime() - walkTime * 1000)/ 1000);
+			
+			toTrains.add(toTrain);
+		}
 
-		dir.put("toTrain", toTrain);
+		dir.put("toTrain", toTrains);
 		
-		dir.put("waitTime", (toTrainTime.getDepartureTime() - fromTrainTime.getArrivalTime() - walkTime * 1000)/ 1000);
+		//dir.put("waitTime", (toTrainTime.getDepartureTime() - fromTrainTime.getArrivalTime() - walkTime * 1000)/ 1000);
 		
 		retval.add(dir);
 	}
