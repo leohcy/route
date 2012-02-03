@@ -46,7 +46,6 @@ $(function() {
 		if(!result) return;
 		var stations = $("#stations");
 		$.each(result, function() {
-			if(this.id == 224 || this.id == 212 || this.id == 192) return;
 			$("<option/>").val(this.id).text(this.name).appendTo(stations);
 		});
 	}, "json");
@@ -133,12 +132,12 @@ $(function() {
 				tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
 				tr += "<td>"+this.fromTrain.trainId+"</td>";
 				tr += "<td>"+formatTime(this.fromTrain.arrivalTime)+"</td>";
-				tr += "<td>"+Math.floor(this.walkTime/60)+"分钟"+"</td>";
+				tr += "<td>"+Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒"+"</td>";
 				tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
 				if(this.toTrain) {
 					tr += "<td>"+this.toTrain.trainId+"</td>";
 					tr += "<td>"+formatTime(this.toTrain.departureTime)+"</td>";
-					tr += "<td>"+Math.floor(this.waitTime/60)+"分钟"+"</td>";
+					tr += "<td>"+Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒"+"</td>";
 					tr += "<td>可达</td>";
 				} else {
 					tr += "<td style='background-color:#BFBFBF'>&nbsp;</td>";
@@ -189,11 +188,11 @@ $(function() {
 					tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
 					tr += "<td>"+this.fromTrain.trainId+"</td>";
 					tr += "<td>"+formatTime(this.fromTrain.arrivalTime)+"</td>";
-					tr += "<td>"+Math.floor(this.walkTime/60)+"分钟"+"</td>";
+					tr += "<td>"+Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒"+"</td>";
 					tr += "<td rel='"+route.toLine.lineDir+"'>"+route.toLine.lineName+(route.toLine.lineDir==2?"上行":"下行")+"</td>";
 					tr += "<td>"+this.toTrain.trainId+"</td>";
 					tr += "<td>"+formatTime(this.toTrain.departureTime)+"</td>";
-					tr += "<td>"+Math.floor(this.waitTime/60)+"分钟"+"</td>";
+					tr += "<td>"+Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒"+"</td>";
 					tr += "<td>可达</td>";
 					tr += "</tr>";
 					routes.push([route.fromLine.lineId, route.toLine.lineId, route.fromLine.lineDir, route.toLine.lineDir, $(tr)]);
@@ -265,8 +264,8 @@ $(function() {
 					tooltip.find(".from-arrival-time").text(formatTime(this.fromTrain.arrivalTime));
 					tooltip.find(".to-train-id").text(this.toTrain.trainId);
 					tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
-					tooltip.find(".walk-time").text(Math.floor(this.walkTime/60));
-					tooltip.find(".wait-time").text(Math.floor(this.waitTime/60));
+					tooltip.find(".walk-time").text(Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒");
+					tooltip.find(".wait-time").text(Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒");
 					tooltip.find(".yesno").hide();
 				} else {
 					var routeId = this.routeId;
@@ -276,8 +275,8 @@ $(function() {
 							tooltip.find(".from-arrival-time").text(formatTime(this.fromTrain.arrivalTime));
 							tooltip.find(".to-train-id").text(this.toTrain.trainId);
 							tooltip.find(".from-departure-time").text(formatTime(this.toTrain.departureTime));
-							tooltip.find(".walk-time").text(Math.floor(this.walkTime/60));
-							tooltip.find(".wait-time").text(Math.floor(this.waitTime/60));
+							tooltip.find(".walk-time").text(Math.floor(this.walkTime/60)+"分"+(this.walkTime%60)+"秒");
+							tooltip.find(".wait-time").text(Math.floor(this.waitTime/60)+"分"+(this.waitTime%60)+"秒");
 							tooltip.find(".yesno").show();
 							return false;
 						}
@@ -383,7 +382,6 @@ $(function() {
 		var offsetY = e.clientY-$(".overview").offset().top-img.css("top").substr(0, img.css("top").length - 2);
 		var x = offsetX * WIDTH / img.width(), y = offsetY * HEIGHT / img.height();
 		for(var i = 0; i < _stationsPoint.length; i++) {
-			if(_stationsPoint[i].stationId == 212 || _stationsPoint[i].stationId == 192) continue;
 			if(Math.pow(_stationsPoint[i].x - x, 2) + Math.pow(_stationsPoint[i].y - y, 2) < 900) {
 				img.css("cursor", "pointer").data("station", _stationsPoint[i].stationId).data("stationName", _stationsPoint[i].stationName);
 				return;
@@ -633,8 +631,8 @@ function formatTime(time) {
 						<span class="yesno" style="display:none">最晚换乘方案</span><br/>
 						末班车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0</span>分钟<br/>
-						等待时间：<span class="wait-time">0</span>分钟
+						换乘时间：<span class="walk-time">0分0秒</span><br/>
+						等待时间：<span class="wait-time">0分0秒</span>
 					</div>
 					<div class="tooltip" style="top:10px; left:280px; display:none;">
 						<h4 class="bottom">末班车<span class="yesno" style="display:none">不</span>可换乘</h4>
@@ -642,8 +640,8 @@ function formatTime(time) {
 						<span class="yesno" style="display:none">最晚换乘方案</span><br/>
 						末班车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0</span>分钟<br/>
-						等待时间：<span class="wait-time">0</span>分钟
+						换乘时间：<span class="walk-time">0分0秒</span><br/>
+						等待时间：<span class="wait-time">0分0秒</span>
 					</div>
 					<div class="tooltip" style="top:240px; left:280px; display:none;">
 						<h4 class="bottom">末班车<span class="yesno" style="display:none">不</span>可换乘</h4>
@@ -651,8 +649,8 @@ function formatTime(time) {
 						<span class="yesno" style="display:none">最晚换乘方案</span><br/>
 						末班车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0</span>分钟<br/>
-						等待时间：<span class="wait-time">0</span>分钟
+						换乘时间：<span class="walk-time">0分0秒</span><br/>
+						等待时间：<span class="wait-time">0分0秒</span>
 					</div>
 					<div class="tooltip" style="top:240px; left:10px; display:none;">
 						<h4 class="bottom">末班车<span class="yesno" style="display:none">不</span>可换乘</h4>
@@ -660,8 +658,8 @@ function formatTime(time) {
 						<span class="yesno" style="display:none">最晚换乘方案</span><br/>
 						末班车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0</span>分钟<br/>
-						等待时间：<span class="wait-time">0</span>分钟
+						换乘时间：<span class="walk-time">0分0秒</span><br/>
+						等待时间：<span class="wait-time">0分0秒</span>
 					</div>
 				</div>
 			</div>
