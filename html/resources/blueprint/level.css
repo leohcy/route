@@ -1,0 +1,35 @@
+.menu { padding:15px 10px; margin:5px 0; background-color:#36F; }
+.menu a { color:#FFF; font-weight:bold; }
+.radius-border { -moz-border-radius:4px; -webkit-border-radius:4px; border:1px solid #aaa; }
+.query-box-title { -moz-border-radius-topleft: 4px; -webkit-border-top-left-radius: 4px; -moz-border-radius-topright: 4px; -webkit-border-top-right-radius: 4px;
+background:-moz-linear-gradient(top, #FFF, #B3DCFD); background:-webkit-linear-gradient(top, #FFF, #B3DCFD); padding:10px 20px; font-weight:bold; }
+.query-box-body { height:350px; padding:10px; position:relative; }
+#stations { width:160px; margin-left:40px; }
+#lines { width:160px; margin-left:40px; }
+#fromstation { width:160px; margin-left:40px; }
+#tostation { width:160px; margin-left:40px; }
+#direction {margin-left:40px; }
+#lines-from,#lines-to { width:100px; margin-left:10px; }
+.query-box-body .buttons { position:absolute; bottom:0px; padding-left:100px; }
+.query-box-body button { -moz-border-radius:6px; -webkit-border-radius:6px; border:1px solid #68ACF0; background-color:#D4EAFF;
+padding:8px 16px; margin:0 10px; font-size:16px; font-weight:bold; cursor:pointer; }
+.overview { overflow:hidden; position:relative; border:1px solid #aaa; }
+.overview button { -moz-border-radius:10px; -webkit-border-radius:10px; border:1px solid #6699CC; background-color:#6699CC;
+position:absolute; width:30px; height:30px; font-size:18px; font-weight:bold; color:#FFF; cursor:pointer; }
+.overview img { position:absolute; top:0; left:0; }
+.station-view { position:relative; }
+.station-view h2 { position:absolute; top:165px; left:195px; color:#FFF; }
+.station-view h3 { position:absolute; color:#FFF; }
+.station-view table { position:absolute; top:400px; right:0px; width:640px; border-top:1px solid #888; border-left:1px solid #888; }
+.station-view th, .station-view td { border-bottom:1px solid #888; border-right:1px solid #888; }
+.station-view .tooltip { position:absolute; width:160px; height:100px; padding:5px; background-color:#a4a4a4;
+-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #6fc; }
+#map-tooltip { position:absolute; width:160px; height:130px; padding:5px; background-color:#fff;
+-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #39f; }
+.close-btn-icon { background-image:url(../images/icons.png); background-position:-96px -128px;
+width:16px; height:16px; right:5px; position:absolute; cursor:pointer; }
+#lines-from-mini,#lines-to-mini { width:70px; }
+.confirm-btn-icon { background-image:url(../images/icons.png); background-position:-64px -144px;
+width:16px; height:16px; position:absolute; bottom:10px; right:10px; cursor:pointer; }
+#chartdiv{margin-top:50px;}
+#time-mode{margin-left:113px;}
