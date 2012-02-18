@@ -206,9 +206,18 @@ $(function() {
 					i += (j - i - 1);
 				}
 			}
-			var tbody = $(".station-view tbody").empty();
+			var tbody = $(".station-view tbody").empty().hide();
 			$.each(routes, function() {
 				tbody.append(this[5]);
+			});
+			$(".station-view thead").css("cursor", "pointer").unbind().click(function() {
+				if(!tbody.is(":visible")) {
+					tbody.fadeIn(1000);
+					$("html,body").animate({ scrollTop: $(".station-view table").offset().top - 80 }, 800);
+				} else {
+					tbody.fadeOut(1000);
+					$("html,body").animate({ scrollTop: 0 }, 800);
+				}
 			});
 			
 			var fromDir = _linesDirInStation[stationId][from];
@@ -515,15 +524,15 @@ function formatTime(time) {
 					<table border="0" cellspacing="0" cellpadding="0">
 						<thead>
 							<tr>
-								<th width="100px">换出/换入</th>
-								<th width="100px">首车<br/>行车方向</th>
-								<th width="40px">首车<br/>车次</th>
-								<th width="60px">首车<br/>到达时刻</th>
-								<th width="70px">换乘<br/>走行时间</th>
-								<th width="100px">衔接车<br/>行车方向</th>
-								<th width="40px">衔接车<br/>车次</th>
-								<th width="60px">衔接车<br/>发车时刻</th>
-								<th width="70px">换乘<br/>等待时间</th>
+								<th width="15%">换出/换入</th>
+								<th width="12%">首车<br/>行车方向</th>
+								<th width="8%">首车<br/>车次</th>
+								<th width="10%">首车<br/>到达时刻</th>
+								<th width="10%">换乘<br/>走行时间</th>
+								<th width="12%">衔接车<br/>行车方向</th>
+								<th width="8%">衔接车<br/>车次</th>
+								<th width="10%">衔接车<br/>发车时刻</th>
+								<th width="10%">换乘<br/>等待时间</th>
 							</tr>
 						</thead>
 						<tbody></tbody>

@@ -24,7 +24,7 @@
 .station-view { position:relative; }
 .station-view h2 { position:absolute; top:165px; left:195px; color:#FFF; }
 .station-view h3 { position:absolute; color:#FFF; }
-.station-view table { position:absolute; top:400px; right:0px; width:690px; border-top:1px solid #888; border-left:1px solid #888; }
+.station-view table { position:absolute; top:400px; right:0px; width:680px; border-top:1px solid #888; border-left:1px solid #888; }
 .station-view th, .station-view td { border-bottom:1px solid #888; border-right:1px solid #888; }
 .station-view .tooltip { position:absolute; width:160px; height:120px; padding:5px; background-color:#a4a4a4;
 	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #6fc; }
@@ -272,9 +272,18 @@ $(function() {
 								i += (j - i - 1);
 							}
 						}
-						var tbody = $(".station-view tbody").empty();
+						var tbody = $(".station-view tbody").empty().hide();
 						$.each(routes, function() {
 							tbody.append(this[5]);
+						});
+						$(".station-view thead").css("cursor", "pointer").unbind().click(function() {
+							if(!tbody.is(":visible")) {
+								tbody.fadeIn(1000);
+								$("html,body").animate({ scrollTop: $(".station-view table").offset().top - 80 }, 800);
+							} else {
+								tbody.fadeOut(1000);
+								$("html,body").animate({ scrollTop: 0 }, 800);
+							}
 						});
 						
 						var fromDir = _linesDirInStation[stationId][from];
@@ -342,10 +351,11 @@ $(function() {
 							$(".overview").hide().find("img").css("opacity", 1);
 							$(".station-view").fadeIn("slow").find("h2").text(stationName);
 						});
+						$("html,body").animate({ scrollTop: 0 }, 800);
 					}, "json");
 				});
 			}
-			$(".train-info-in-station").fadeIn();
+			$("html,body").animate({ scrollTop: $(".train-info-in-station").fadeIn().offset().top - 200 }, 800);
 		}, "json");
 	};
 	window.queryAction = function(stationId, stationName, fromLineSelector, toLineSelector, fromLineDirsSelector, toLineDirsSelector) {
@@ -452,7 +462,7 @@ $(function() {
 					i += (j - i - 1);
 				}
 			}
-			var tbody = $(".station-view tbody").empty();
+			var tbody = $(".station-view tbody").empty().hide();
 			$.each(routes, function() {
 				tbody.append(this[5]);
 			});
@@ -505,6 +515,15 @@ $(function() {
 					tbody.append(this[4]);
 				});
 			}
+			$(".station-view thead").css("cursor", "pointer").unbind().click(function() {
+				if(!tbody.is(":visible")) {
+					tbody.fadeIn(1000);
+					$("html,body").animate({ scrollTop: $(".station-view table").offset().top - 80 }, 800);
+				} else {
+					tbody.fadeOut(1000);
+					$("html,body").animate({ scrollTop: 0 }, 800);
+				}
+			});
 			
 			var fromDir = _linesDirInStation[stationId][from];
 			var toDir = _linesDirInStation[stationId][to];
@@ -863,16 +882,16 @@ function formatTime(time) {
 					<table border="0" cellspacing="0" cellpadding="0">
 						<thead>
 							<tr>
-								<th width="100px">换出/换入</th>
-								<th width="100px">到达车<br/>行车方向</th>
-								<th width="40px">到达车<br/>车次</th>
-								<th width="60px">到达车<br/>到达时刻</th>
-								<th width="70px">换乘<br/>走行时间</th>
-								<th width="100px">衔接车<br/>行车方向</th>
-								<th width="40px">衔接车<br/>车次</th>
-								<th width="60px">衔接车<br/>发车时刻</th>
-								<th width="70px">换乘<br/>等待时间</th>
-								<th width="50px">是否<br/>可达</th>
+								<th width="12%">换出/换入</th>
+								<th width="12%">到达车<br/>行车方向</th>
+								<th width="8%">到达车<br/>车次</th>
+								<th width="10%">到达车<br/>到达时刻</th>
+								<th width="10%">换乘<br/>走行时间</th>
+								<th width="12%">衔接车<br/>行车方向</th>
+								<th width="8%">衔接车<br/>车次</th>
+								<th width="10%">衔接车<br/>发车时刻</th>
+								<th width="10%">换乘<br/>等待时间</th>
+								<th width="8%">是否<br/>可达</th>
 							</tr>
 						</thead>
 						<tbody></tbody>
