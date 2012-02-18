@@ -28,7 +28,7 @@
 .station-view th, .station-view td { border-bottom:1px solid #888; border-right:1px solid #888; }
 .station-view .tooltip { position:absolute; width:160px; height:100px; padding:5px; background-color:#a4a4a4;
 	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #6fc; }
-#map-tooltip { position:absolute; width:160px; height:130px; padding:5px; background-color:#fff;
+#map-tooltip { position:absolute; width:200px; height:130px; padding:5px; background-color:#fff;
 	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #39f; }
 .close-btn-icon { background-image:url(resources/images/icons.png); background-position:-96px -128px;
 	width:16px; height:16px; right:5px; position:absolute; cursor:pointer; }
@@ -61,6 +61,20 @@ $(function() {
 		if(!result) return;
 		_linesColor = result;
 	}, "json");
+	var _terminalNames = {};
+	// 获取线路终点站名称
+	$.post("service/getAllLinesTerminalNames.json", function(result) {
+		if(!result) return;
+		_terminalNames = result;
+	}, "json");
+	window.changeDirName = function(from, fromDirs, to, toDirs) {
+		var fromDirs = $(fromDirs), fromNames = _terminalNames[$(from).val()];
+		for(var dir in fromNames)
+			fromDirs.filter("[value="+dir+"]").next("span:first").text(fromNames[dir]);
+		var toDirs = $(toDirs), toNames = _terminalNames[$(to).val()];
+		for(var dir in toNames)
+			toDirs.filter("[value="+dir+"]").next("span:first").text(toNames[dir]);
+	};
 	// 选择一个车站
 	var _availableRoutes = {};
 	window.chooseStation = function(stationId, fromLinesSelector, toLinesSelector, callback) {
@@ -92,6 +106,7 @@ $(function() {
 		}
 		chooseStation($(this).val(), "#lines-from", "#lines-to", function() {
 			$("#lines-from,#lines-to").closest("p").fadeIn().find(":checkbox").attr("checked", true);
+			changeDirName("#lines-from", $("#lines-from").closest("p").find(":checkbox"), "#lines-to", $("#lines-to").closest("p").find(":checkbox"));
 		});
 	});
 	// 选择线路
@@ -100,9 +115,10 @@ $(function() {
 		var she = me.closest("p").siblings(".lines").children("select");
 		if(me.val() == she.val())
 			she.children(":selected").siblings(":first").attr("selected", true);
+		changeDirName("#lines-from", $("#lines-from").closest("p").find(":checkbox"), "#lines-to", $("#lines-to").closest("p").find(":checkbox"));
 	});
 	// 选择方向
-	$("#lines-from ~ :checkbox,#lines-to ~ :checkbox").change(function() {
+	$("#lines-from,#lines-to").closest("p").find(":checkbox").change(function() {
 		if($(this).attr("checked")) return;
 		$(this).siblings(":checkbox:first").attr("checked", true);
 	});
@@ -259,7 +275,7 @@ $(function() {
 	};
 	$("#query-btn").click(function() {
 		$("#reset-btn").click();
-		queryAction($("#stations").val(), $("#stations :selected").text(), "#lines-from", "#lines-to", "#lines-from ~ :checkbox", "#lines-to ~ :checkbox");
+		queryAction($("#stations").val(), $("#stations :selected").text(), "#lines-from", "#lines-to", $("#lines-from").closest("p").find(":checkbox"), $("#lines-to").closest("p").find(":checkbox"));
 	});
 	// 重置动作
 	$("#reset-btn").click(function() {
@@ -339,7 +355,9 @@ $(function() {
 		var x = offsetX * WIDTH / img.width(), y = offsetY * HEIGHT / img.height();
 		for(var i = 0; i < _stationsPoint.length; i++) {
 			if(Math.pow(_stationsPoint[i].x - x, 2) + Math.pow(_stationsPoint[i].y - y, 2) < 900) {
-				img.css("cursor", "pointer").data("station", _stationsPoint[i].stationId).data("stationName", _stationsPoint[i].stationName);
+				img.css("cursor", "pointer");
+				if(!$("#map-tooltip").is(":visible"))
+					img.data("station", _stationsPoint[i].stationId).data("stationName", _stationsPoint[i].stationName);
 				return;
 			}
 		}
@@ -347,7 +365,8 @@ $(function() {
 	}).click(function(e) {
 		if(img.css("cursor") != "pointer") return;
 		chooseStation(img.data("station"), "#lines-from-mini", "#lines-to-mini", function() {
-			$("#map-tooltip").css({ left: e.pageX-185, top: e.pageY+5 }).fadeIn().find(":checkbox").attr("checked", true);
+			$("#map-tooltip").css({ left: e.pageX-225, top: e.pageY+5 }).fadeIn().find(":checkbox").attr("checked", true);
+			changeDirName("#lines-from-mini", "#lines-from-mini ~ :checkbox[name=from]", "#lines-to-mini", "#lines-to-mini ~ :checkbox[name=to]");
 		});
 	});
 	$("#map-tooltip .close-btn-icon,#map-tooltip .confirm-btn-icon,.overview button").click(function() {
@@ -358,13 +377,14 @@ $(function() {
 		var she = me.siblings("select");
 		if(me.val() == she.val())
 			she.children(":selected").siblings(":first").attr("selected", true);
+		changeDirName("#lines-from-mini", "#lines-from-mini ~ :checkbox[name=from]", "#lines-to-mini", "#lines-to-mini ~ :checkbox[name=to]");
 	});
 	$("#lines-from-mini ~ :checkbox,#lines-to-mini ~ :checkbox").change(function() {
 		if($(this).attr("checked")) return;
 		$(this).siblings(":checkbox[name="+$(this).attr("name")+"]:first").attr("checked", true);
 	});
 	$("#map-tooltip .confirm-btn-icon").click(function() {
-		queryAction(img.data("station"), img.data("stationName"), "#lines-from-mini", "#lines-to-mini", "#lines-from-mini ~ :checkbox", "#lines-to-mini ~ :checkbox");
+		queryAction(img.data("station"), img.data("stationName"), "#lines-from-mini", "#lines-to-mini", "#lines-from-mini ~ :checkbox[name=from]", "#lines-to-mini ~ :checkbox[name=to]");
 	});
 });
 
@@ -461,14 +481,18 @@ function formatTime(time) {
 					<div class="query-box-body">
 						<p><label>选择换乘站：</label><select id="stations"><option class="default" value="0">请选择</option></select></p>
 						<p class="lines" style="display:none">
-							<label>换出线路：</label><select id="lines-from"></select>&nbsp; 
-							<input type="checkbox" value="2" />上行 &nbsp;
-							<input type="checkbox" value="1" />下行
+							<label>换出线路：</label><select id="lines-from"></select><br/>
+							<span style="margin-left:70px">
+								<input type="checkbox" value="2" /><span>上行</span> &nbsp;
+								<input type="checkbox" value="1" /><span>下行</span>
+							</span>
 						</p>
 						<p class="lines" style="display:none">
-							<label>换入线路：</label><select id="lines-to"></select>&nbsp; 
-							<input type="checkbox" value="2" />上行 &nbsp;
-							<input type="checkbox" value="1" />下行
+							<label>换入线路：</label><select id="lines-to"></select><br/>
+							<span style="margin-left:70px">
+								<input type="checkbox" value="2" /><span>上行</span> &nbsp;
+								<input type="checkbox" value="1" /><span>下行</span>
+							</span>
 						</p>
 						<p class="buttons"><button id="query-btn">检索</button><button id="reset-btn">重置</button></p>
 					</div>
@@ -538,11 +562,11 @@ function formatTime(time) {
 		<div id="map-tooltip" style="display:none">
 			<div class="close-btn-icon">&nbsp;</div>
 			<label>换出线路：</label><select id="lines-from-mini"></select><br/>
-			<input type="checkbox" name="from" value="2" />上行 &nbsp;
-			<input type="checkbox" name="from" value="1" />下行<br/>
+			<input type="checkbox" name="from" value="2" /><span>上行</span> &nbsp;
+			<input type="checkbox" name="from" value="1" /><span>下行</span><br/>
 			<label>换入线路：</label><select id="lines-to-mini"></select><br/>
-			<input type="checkbox" name="to" value="2" />上行 &nbsp;
-			<input type="checkbox" name="to" value="1" />下行
+			<input type="checkbox" name="to" value="2" /><span>上行</span> &nbsp;
+			<input type="checkbox" name="to" value="1" /><span>下行</span>
 			<div class="confirm-btn-icon">&nbsp;</div>
 		</div>
 	</body>
