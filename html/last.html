@@ -122,6 +122,7 @@ $(function() {
 			alert("没有符合条件的换乘路线");
 			return;
 		}
+		var chosenRoutes = routes;
 		$.post("../Service?method=findLastTransferSolution", {stationId: stationId, routeIds: routes.join(",")}, function(result) {
 			if(!result) return;
 			var routes = [];
@@ -281,13 +282,16 @@ $(function() {
 				quadrant = [ [1,2], [1,1], [2,1], [2,2] ];
 			else
 				quadrant = [ [2,2], [1,2], [1,1], [2,1] ];
-			routes = {};
+			routes = {}, chosenQuadrant = [false,false,false,false];
 			for(var i = 0; i < quadrant.length; i++) {
 				$.each(_availableRoutes, function(routeId) {
 					if(this.fromLine.lineId == from && this.toLine.lineId == to
 							&& this.fromLine.lineDir == quadrant[i][0]
-							&& this.toLine.lineDir == quadrant[i][1])
+							&& this.toLine.lineDir == quadrant[i][1]) {
 						routes[routeId] = i;
+						if($.inArray(routeId, chosenRoutes) != -1)
+							chosenQuadrant[i] = true;
+					}
 				});
 			}
 			var tooltips = $(".station-view .tooltip").hide();
@@ -331,9 +335,9 @@ $(function() {
 			var toLineColor = _linesColor[to];
 			if(stopLastAnimation) stopLastAnimation();
 			if(horizontalFirst)
-				stopLastAnimation = enterStation(true, fromLineName, fromLineColor, toLineName, toLineColor);
+				stopLastAnimation = enterStation(true, fromLineName, fromLineColor, toLineName, toLineColor, chosenQuadrant);
 			else
-				stopLastAnimation = enterStation(false, toLineName, toLineColor, fromLineName, fromLineColor);
+				stopLastAnimation = enterStation(false, toLineName, toLineColor, fromLineName, fromLineColor, chosenQuadrant);
 			zoomIntoStation(stationId, function() {
 				$(".overview").hide().find("img").css("opacity", 1);
 				$(".station-view").fadeIn("slow").find("h2").text(stationName);
@@ -457,136 +461,60 @@ $(function() {
 	var WIDTH = 870, HEIGHT = $(window).height() - 168, INTERVAL = 5;
 	var paper = Raphael($(".station-view")[0], WIDTH, HEIGHT);
 	var lines = [];
-	lines.push(paper.rect(0, 160, 200, 20).attr({ stroke: "none" }));
-	lines.push(paper.rect(200, 0, 20, 160).attr({ stroke: "none" }));
-	lines.push(paper.rect(0, 200, 200, 20).attr({ stroke: "none" }));
-	lines.push(paper.rect(200, 220, 20, HEIGHT-220).attr({ stroke: "none" }));
-	lines.push(paper.rect(260, 160, WIDTH-260, 20).attr({ stroke: "none" }));
-	lines.push(paper.rect(240, 0, 20, 160).attr({ stroke: "none" }));
-	lines.push(paper.rect(260, 200, WIDTH-260, 20).attr({ stroke: "none" }));
-	lines.push(paper.rect(240, 220, 20, HEIGHT-220).attr({ stroke: "none" }));
+	lines.push(paper.rect(0, 160, WIDTH, 20).attr({ stroke: "none" }));
+	lines.push(paper.rect(0, 200, WIDTH, 20).attr({ stroke: "none" }));
+	lines.push(paper.rect(200, 0, 20, HEIGHT).attr({ stroke: "none" }));
+	lines.push(paper.rect(240, 0, 20, HEIGHT).attr({ stroke: "none" }));
 	paper.circle(230, 190, 50).attr({ fill: "#C33B3D", stroke: "none" });
 	var horizontalColor = paper.rect(WIDTH-130, 110, 120, 40, 10);
-	var verticalColor = paper.rect(70, HEIGHT-50, 120, 40, 10);
+	var verticalColor = paper.rect(50, HEIGHT-50, 120, 40, 10);
 	// 进入车站，开始动画
-	window.enterStation = function(horizontalFirst, horizontalLineName, horizontalLineColor, verticalLineName, verticalLineColor) {
+	window.enterStation = function(horizontalFirst, horizontalLineName, horizontalLineColor, verticalLineName, verticalLineColor, chosenQuadrant) {
 		$(".station-view h3:first").text(horizontalLineName).css({ top: 120, left: WIDTH-100 });
-		$(".station-view h3:last").text(verticalLineName).css({ top: HEIGHT-40, left: 100 });
+		$(".station-view h3:last").text(verticalLineName).css({ top: HEIGHT-40, left: 80 });
 		horizontalColor.attr({ fill: horizontalLineColor });
 		verticalColor.attr({ fill: verticalLineColor });
 		var gradient = function(dir, offset, color) {
 			return function(num) {
-				if(num == 0 || num == 100)
+				if(num <= 0 || num >= 100)
 					return { fill: color };
-				if(num < offset)
-					return { fill: dir+"-#F5F98E-"+color+":"+(num+offset)+"-"+color };
+				else if(num < offset*2)
+					return { fill: dir+"-#ddd-#ddd:"+num+"-#222:"+num+"-#222:"+Math.floor(num*1.5)+"-"+color+":"+Math.floor(num*1.5)+"-"+color };
 				else if(num > 100-offset)
-					return { fill: dir+"-"+color+"-"+color+":"+(num-offset)+"-#F5F98E" };
+					return { fill: dir+"-"+color+"-"+color+":"+(3*num-200)+"-#ddd:"+(3*num-200)+"-#ddd:"+num+"-#222:"+num+"-#222" };
 				else
-					return { fill: dir+"-"+color+"-"+color+":"+(num-offset)+"-#F5F98E:"+num+"-"+color+":"+(num+offset)+"-"+color };
+					return { fill: dir+"-"+color+"-"+color+":"+(num-offset*2)+"-#ddd:"+(num-offset*2)+"-#ddd:"+num+"-#222:"+num+"-#222:"+(num+offset)+"-"+color+":"+(num+offset)+"-"+color };
 			};
 		};
-		paper.customAttributes.gra_s_e = gradient(0, 15, horizontalLineColor);
-		paper.customAttributes.gra_l_e = gradient(0, 5, horizontalLineColor);
-		paper.customAttributes.gra_s_n = gradient(90, 15, verticalLineColor);
-		paper.customAttributes.gra_m_n = gradient(90, 10, verticalLineColor);
-		paper.customAttributes.gra_s_w = gradient(180, 15, horizontalLineColor);
-		paper.customAttributes.gra_l_w = gradient(180, 5, horizontalLineColor);
-		paper.customAttributes.gra_s_s = gradient(270, 15, verticalLineColor);
-		paper.customAttributes.gra_m_s = gradient(270, 10, verticalLineColor);
-		lines[0].stop().attr(horizontalFirst ? { gra_s_e: 0 } : { gra_s_w: 0 });
-		lines[1].stop().attr(horizontalFirst ? { gra_s_n: 0 } : { gra_s_s: 0 });
-		lines[2].stop().attr(horizontalFirst ? { gra_s_e: 0 } : { gra_s_w: 0 });
-		lines[3].stop().attr(horizontalFirst ? { gra_m_s: 0 } : { gra_m_n: 0 });
-		lines[4].stop().attr(horizontalFirst ? { gra_l_w: 0 } : { gra_l_e: 0 });
-		lines[5].stop().attr(horizontalFirst ? { gra_s_n: 0 } : { gra_s_s: 0 });
-		lines[6].stop().attr(horizontalFirst ? { gra_l_w: 0 } : { gra_l_e: 0 });
-		lines[7].stop().attr(horizontalFirst ? { gra_m_s: 0 } : { gra_m_n: 0 });
+		paper.customAttributes.gra_e = gradient(0, 3, horizontalLineColor);
+		paper.customAttributes.gra_n = gradient(90, 4, verticalLineColor);
+		paper.customAttributes.gra_w = gradient(180, 3, horizontalLineColor);
+		paper.customAttributes.gra_s = gradient(270, 4, verticalLineColor);
+		lines[0].stop().attr({ gra_e: 0 });
+		lines[1].stop().attr({ gra_w: 0 });
+		lines[2].stop().attr({ gra_n: 0 });
+		lines[3].stop().attr({ gra_s: 0 });
 		var running = true;
-		(function() {
-			if(!running) return;
-			var func = arguments.callee;
-			if(horizontalFirst) {
-				lines[0].stop().animate({ gra_s_e: 100 }, 200 * INTERVAL, function() {
-					lines[0].attr({ gra_s_e: 0 });
-					lines[1].stop().animate({ gra_s_n: 100 }, 160 * INTERVAL, function() {
-						lines[1].attr({ gra_s_n: 0 });
-						func();
-					});
-				});
-			} else {
-				lines[1].stop().animate({ gra_s_s: 100 }, 160 * INTERVAL, function() {
-					lines[1].attr({ gra_s_s: 0 });
-					lines[0].stop().animate({ gra_s_w: 100 }, 200 * INTERVAL, function() {
-						lines[0].attr({ gra_s_w: 0 });
-						func();
-					});
-				});
-			}
-		})();
-		(function() {
-			if(!running) return;
-			var func = arguments.callee;
-			if(horizontalFirst) {
-				lines[2].stop().animate({ gra_s_e: 100 }, 200 * INTERVAL, function() {
-					lines[2].attr({ gra_s_e: 0 });
-					lines[3].stop().animate({ gra_m_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
-						lines[3].attr({ gra_m_s: 0 });
-						func();
-					});
-				});
-			} else {
-				lines[3].stop().animate({ gra_m_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
-					lines[3].attr({ gra_m_n: 0 });
-					lines[2].stop().animate({ gra_s_w: 100 }, 200 * INTERVAL, function() {
-						lines[2].attr({ gra_s_w: 0 });
-						func();
-					});
-				});
-			}
-		})();
-		(function() {
-			if(!running) return;
-			var func = arguments.callee;
-			if(horizontalFirst) {
-				lines[4].stop().animate({ gra_l_w: 100 }, (WIDTH-260) * INTERVAL, function() {
-					lines[4].attr({ gra_l_w: 0 });
-					lines[5].stop().animate({ gra_s_n: 100 }, 160 * INTERVAL, function() {
-						lines[5].attr({ gra_s_n: 0 });
-						func();
-					});
-				});
-			} else {
-				lines[5].stop().animate({ gra_s_s: 100 }, 160 * INTERVAL, function() {
-					lines[5].attr({ gra_s_s: 0 });
-					lines[4].stop().animate({ gra_l_e: 100 }, (WIDTH-260) * INTERVAL, function() {
-						lines[4].attr({ gra_l_e: 0 });
-						func();
-					});
-				});
-			}
-		})();
-		(function() {
-			if(!running) return;
-			var func = arguments.callee;
-			if(horizontalFirst) {
-				lines[6].stop().animate({ gra_l_w: 100 }, (WIDTH-260) * INTERVAL, function() {
-					lines[6].attr({ gra_l_w: 0 });
-					lines[7].stop().animate({ gra_m_s: 100 }, (HEIGHT-220) * INTERVAL, function() {
-						lines[7].attr({ gra_m_s: 0 });
-						func();
-					});
-				});
-			} else {
-				lines[7].stop().animate({ gra_m_n: 100 }, (HEIGHT-220) * INTERVAL, function() {
-					lines[7].attr({ gra_m_n: 0 });
-					lines[6].stop().animate({ gra_l_e: 100 }, (WIDTH-260) * INTERVAL, function() {
-						lines[6].attr({ gra_l_e: 0 });
-						func();
-					});
-				});
-			}
-		})();
+		if(chosenQuadrant[0] && horizontalFirst || chosenQuadrant[1] && !horizontalFirst || chosenQuadrant[2] && !horizontalFirst || chosenQuadrant[3] && horizontalFirst)
+			(function() {
+				if(!running) return;
+				lines[0].stop().attr({ gra_e: 0 }).animate({ gra_e: 100 }, WIDTH * INTERVAL, arguments.callee);
+			})();
+		if(chosenQuadrant[0] && horizontalFirst || chosenQuadrant[1] && horizontalFirst || chosenQuadrant[2] && !horizontalFirst || chosenQuadrant[3] && !horizontalFirst)
+			(function() {
+				if(!running) return;
+				lines[2].stop().attr({ gra_n: 0 }).animate({ gra_n: 100 }, HEIGHT * INTERVAL, arguments.callee);
+			})();
+		if(chosenQuadrant[0] && !horizontalFirst || chosenQuadrant[1] && horizontalFirst || chosenQuadrant[2] && horizontalFirst || chosenQuadrant[3] && !horizontalFirst)
+			(function() {
+				if(!running) return;
+				lines[1].stop().attr({ gra_w: 0 }).animate({ gra_w: 100 }, WIDTH * INTERVAL, arguments.callee);
+			})();
+		if(chosenQuadrant[0] && !horizontalFirst || chosenQuadrant[1] && !horizontalFirst || chosenQuadrant[2] && horizontalFirst || chosenQuadrant[3] && horizontalFirst)
+			(function() {
+				if(!running) return;
+				lines[3].stop().attr({ gra_s: 0 }).animate({ gra_s: 100 }, HEIGHT * INTERVAL, arguments.callee);
+			})();
 		return function() {
 			running = false;
 		};
