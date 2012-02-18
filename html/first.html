@@ -24,7 +24,7 @@
 .station-view { position:relative; }
 .station-view h2 { position:absolute; top:165px; left:195px; color:#FFF; }
 .station-view h3 { position:absolute; color:#FFF; }
-.station-view table { position:absolute; top:400px; right:0px; width:620px; border-top:1px solid #888; border-left:1px solid #888; }
+.station-view table { position:absolute; top:400px; right:0px; width:640px; border-top:1px solid #888; border-left:1px solid #888; }
 .station-view th, .station-view td { border-bottom:1px solid #888; border-right:1px solid #888; }
 .station-view .tooltip { position:absolute; width:160px; height:100px; padding:5px; background-color:#a4a4a4;
 	-moz-border-radius:8px; -webkit-border-radius:8px; border:3px solid #6fc; }
@@ -130,7 +130,7 @@ $(function() {
 				var me = this;
 				$.each(this.toTrain, function() {
 					var tr = "<tr>";
-					tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"-"+route.toLine.lineName+"</td>";
+					tr += "<td rel='"+route.fromLine.lineId+"-"+route.toLine.lineId+"'>"+route.fromLine.lineName+"换出<br/> - <br/>"+route.toLine.lineName+"换入</td>";
 					tr += "<td rel='"+route.fromLine.lineDir+"'>"+route.fromLine.lineName+(route.fromLine.lineDir==2?"上行":"下行")+"</td>";
 					tr += "<td>"+me.fromTrain.trainId+"</td>";
 					tr += "<td>"+formatTime(me.fromTrain.arrivalTime)+"</td>";
@@ -567,11 +567,11 @@ function formatTime(time) {
 								<th width="100px">首车<br/>行车方向</th>
 								<th width="40px">首车<br/>车次</th>
 								<th width="60px">首车<br/>到达时刻</th>
-								<th width="60px">换乘<br/>时间</th>
-								<th width="100px">换乘车<br/>行车方向</th>
-								<th width="40px">换乘车<br/>车次</th>
-								<th width="60px">换乘车<br/>发车时刻</th>
-								<th width="60px">等待<br/>时间</th>
+								<th width="70px">换乘<br/>走行时间</th>
+								<th width="100px">衔接车<br/>行车方向</th>
+								<th width="40px">衔接车<br/>车次</th>
+								<th width="60px">衔接车<br/>发车时刻</th>
+								<th width="70px">换乘<br/>等待时间</th>
 							</tr>
 						</thead>
 						<tbody></tbody>
@@ -581,28 +581,28 @@ function formatTime(time) {
 						<hr class="bottom" style="margin:5px 0" />
 						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0分0秒</span>
+						换乘走行时间：<span class="walk-time">0分0秒</span>
 					</div>
 					<div class="tooltip" style="top:10px; left:280px; display:none;">
 						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">0分0秒</span></h4>
 						<hr class="bottom" style="margin:5px 0" />
 						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0分0秒</span>
+						换乘走行时间：<span class="walk-time">0分0秒</span>
 					</div>
 					<div class="tooltip" style="top:240px; left:280px; display:none;">
 						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">0分0秒</span></h4>
 						<hr class="bottom" style="margin:5px 0" />
 						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0分0秒</span>
+						换乘走行时间：<span class="walk-time">0分0秒</span>
 					</div>
 					<div class="tooltip" style="top:240px; left:10px; display:none;">
 						<h4 class="bottom">首班车换乘等待时间为<span class="wait-time">0分0秒</span></h4>
 						<hr class="bottom" style="margin:5px 0" />
 						首车<span class="from-train-id">0000</span>次(<span class="from-arrival-time">00:00</span>到达)<br/>
 						换乘<span class="to-train-id">0000</span>次(<span class="from-departure-time">00:00</span>发车)<br/>
-						换乘时间：<span class="walk-time">0分0秒</span>
+						换乘走行时间：<span class="walk-time">0分0秒</span>
 					</div>
 				</div>
 			</div>

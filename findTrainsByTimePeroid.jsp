@@ -43,7 +43,7 @@
 		Map<String, Object> lineTrains = new HashMap<String, Object>();
 		lineTrains.put("lineDirs", "2");
 		
-		Line line = networkFactory.getLine(Integer.parseInt(lineId), LineDirection.DOWN);
+		Line line = networkFactory.getLine(Integer.parseInt(lineId), LineDirection.UP);
 		Timetable times = trainWorkingDiagramFactory.getTimetableByLine(line);
 		List<TrainTime> trainTimes = times.getTrainsOfStationBetween(station.getId(), startTime, endTime);
 		lineTrains.put("trains", trainTimes);
